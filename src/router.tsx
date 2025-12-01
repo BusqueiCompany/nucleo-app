@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import AuthPage from "./pages/auth";
+import Login from "./pages/auth/Login";
+import Cadastro from "./pages/auth/Cadastro";
 import ClientePage from "./pages/cliente";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
@@ -13,6 +15,8 @@ const AppRouter = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/auth/login" element={<Login />} />
+      <Route path="/auth/cadastro" element={<Cadastro />} />
       <Route path="/cliente" element={<ClientePage />} />
       <Route path="/entregador" element={<EntregadorPage />} />
       <Route path="/parceiro" element={<ParceiroPage />} />
