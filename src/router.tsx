@@ -1,8 +1,9 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import AuthPage from "./pages/auth";
 import Login from "./pages/auth/Login";
 import Cadastro from "./pages/auth/Cadastro";
+import OnboardingPage from "./pages/onboarding/index";
 import ClientePage from "./pages/cliente";
 import MercadoPage from "./pages/cliente/mercado";
 import CarrinhoPage from "./pages/cliente/carrinho";
@@ -32,10 +33,19 @@ import AdmRotasPrioritariasPage from "./pages/adm/rotas-prioritarias";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+const OnboardingGuard = ({ children }: { children: React.ReactNode }) => {
+  const hasCompletedOnboarding = localStorage.getItem("onboarding_completed");
+  if (!hasCompletedOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  return <>{children}</>;
+};
+
 const AppRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/cadastro" element={<Cadastro />} />
@@ -43,7 +53,9 @@ const AppRouter = () => {
         path="/cliente"
         element={
           <ProtectedRoute>
-            <ClientePage />
+            <OnboardingGuard>
+              <ClientePage />
+            </OnboardingGuard>
           </ProtectedRoute>
         }
       />
