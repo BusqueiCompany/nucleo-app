@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      deliveries: {
+        Row: {
+          created_at: string | null
+          distancia_metros: number | null
+          driver_id: string | null
+          id: string
+          order_id: string | null
+          status: string
+          updated_at: string | null
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          distancia_metros?: number | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          status?: string
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          distancia_metros?: number | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          status?: string
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliveries_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_drivers: {
         Row: {
           created_at: string | null
