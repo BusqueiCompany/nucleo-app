@@ -5,6 +5,7 @@ import Login from "./pages/auth/Login";
 import Cadastro from "./pages/auth/Cadastro";
 import ClientePage from "./pages/cliente";
 import MercadoPage from "./pages/cliente/mercado";
+import CarrinhoPage from "./pages/cliente/carrinho";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -32,6 +33,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <MercadoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/carrinho"
+        element={
+          <ProtectedRoute>
+            <CarrinhoPage />
           </ProtectedRoute>
         }
       />
