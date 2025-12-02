@@ -234,6 +234,42 @@ export type Database = {
         }
         Relationships: []
       }
+      global_promotions: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          desconto_percent: number | null
+          descricao: string | null
+          fim: string | null
+          id: string
+          imagem_url: string | null
+          inicio: string | null
+          titulo: string
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          desconto_percent?: number | null
+          descricao?: string | null
+          fim?: string | null
+          id?: string
+          imagem_url?: string | null
+          inicio?: string | null
+          titulo: string
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          desconto_percent?: number | null
+          descricao?: string | null
+          fim?: string | null
+          id?: string
+          imagem_url?: string | null
+          inicio?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
       markets: {
         Row: {
           created_at: string | null
