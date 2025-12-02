@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import AppRouter from "./router";
-import InstallPWAButton from "@/components/InstallPWAButton";
 
 const queryClient = new QueryClient();
 
@@ -15,7 +14,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AppRouter />
-        <InstallPWAButton />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

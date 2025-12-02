@@ -1,21 +1,13 @@
 {
-  "name": "Busquei - Entregas Inteligentes",
+  "name": "Busquei - Compare e Economize",
   "short_name": "Busquei",
-  "description": "Compare preços e economize em mercados, farmácias, petshops e muito mais com entregas rápidas",
+  "description": "Encontre os melhores preços em mercados, farmácias e muito mais",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAFAFA",
   "theme_color": "#14C57C",
   "orientation": "portrait",
-  "scope": "/",
-  "categories": ["shopping", "business", "food"],
   "icons": [
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
@@ -23,52 +15,10 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-180.png",
-      "sizes": "180x180",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Novo Pedido",
-      "short_name": "Pedir",
-      "description": "Fazer um novo pedido",
-      "url": "/cliente",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Meu Carrinho",
-      "short_name": "Carrinho",
-      "description": "Ver carrinho de compras",
-      "url": "/cliente/carrinho",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Rastrear Pedido",
-      "short_name": "Rastrear",
-      "description": "Acompanhar pedidos",
-      "url": "/cliente/tracking",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "purpose": "any maskable"
     }
   ]
 }
