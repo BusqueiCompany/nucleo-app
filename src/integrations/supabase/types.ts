@@ -438,7 +438,7 @@ export type Database = {
       is_vip_active: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "suporte" | "cliente" | "parceiro"
+      app_role: "admin" | "suporte" | "cliente" | "parceiro" | "entregador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -566,7 +566,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "suporte", "cliente", "parceiro"],
+      app_role: ["admin", "suporte", "cliente", "parceiro", "entregador"],
     },
   },
 } as const

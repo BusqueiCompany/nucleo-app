@@ -15,7 +15,10 @@ import VIPPage from "./pages/cliente/vip";
 import PerfilPage from "./pages/cliente/perfil";
 import ClienteSuportePage from "./pages/cliente/suporte";
 import SuporteDetalhePage from "./pages/cliente/suporte-detalhe";
-import EntregadorPage from "./pages/entregador";
+import EntregadorDashboardPage from "./pages/entregador/dashboard";
+import EntregadorRotasPage from "./pages/entregador/rotas";
+import EntregadorGanhosPage from "./pages/entregador/ganhos";
+import EntregadorPerfilPage from "./pages/entregador/perfil";
 import ParceiroDashboardPage from "./pages/parceiro/dashboard";
 import ParceiroProdutosPage from "./pages/parceiro/produtos";
 import ParceiroPedidosPage from "./pages/parceiro/pedidos";
@@ -133,7 +136,31 @@ const AppRouter = () => {
         path="/entregador"
         element={
           <ProtectedRoute>
-            <EntregadorPage />
+            <EntregadorDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entregador/rotas"
+        element={
+          <ProtectedRoute>
+            <EntregadorRotasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entregador/ganhos"
+        element={
+          <ProtectedRoute>
+            <EntregadorGanhosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entregador/perfil"
+        element={
+          <ProtectedRoute>
+            <EntregadorPerfilPage />
           </ProtectedRoute>
         }
       />
