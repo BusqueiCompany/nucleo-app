@@ -8,6 +8,7 @@ import MercadoPage from "./pages/cliente/mercado";
 import CarrinhoPage from "./pages/cliente/carrinho";
 import CheckoutPage from "./pages/cliente/checkout";
 import ConfirmadoPage from "./pages/cliente/confirmado";
+import TrackingPage from "./pages/cliente/tracking";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -59,6 +60,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <ConfirmadoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/tracking"
+        element={
+          <ProtectedRoute>
+            <TrackingPage />
           </ProtectedRoute>
         }
       />
