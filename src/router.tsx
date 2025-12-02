@@ -9,6 +9,7 @@ import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
 import AdmPage from "./pages/adm";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppRouter = () => {
   return (
@@ -17,11 +18,46 @@ const AppRouter = () => {
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/cadastro" element={<Cadastro />} />
-      <Route path="/cliente" element={<ClientePage />} />
-      <Route path="/entregador" element={<EntregadorPage />} />
-      <Route path="/parceiro" element={<ParceiroPage />} />
-      <Route path="/suporte" element={<SuportePage />} />
-      <Route path="/adm" element={<AdmPage />} />
+      <Route
+        path="/cliente"
+        element={
+          <ProtectedRoute>
+            <ClientePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entregador"
+        element={
+          <ProtectedRoute>
+            <EntregadorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parceiro"
+        element={
+          <ProtectedRoute>
+            <ParceiroPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/suporte"
+        element={
+          <ProtectedRoute>
+            <SuportePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/adm"
+        element={
+          <ProtectedRoute>
+            <AdmPage />
+          </ProtectedRoute>
+        }
+      />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
