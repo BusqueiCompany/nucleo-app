@@ -109,7 +109,10 @@ const CarrinhoPage = () => {
 
             {/* Botões */}
             <div className="space-y-3">
-              <button className="w-full bg-gradient-to-r from-gradient-start to-gradient-end text-white rounded-[1.5rem] py-4 shadow-lg hover:shadow-xl transition-shadow font-semibold">
+              <button
+                onClick={() => navigate("/cliente/checkout")}
+                className="w-full bg-gradient-to-r from-gradient-start to-gradient-end text-white rounded-[1.5rem] py-4 shadow-lg hover:shadow-xl transition-shadow font-semibold"
+              >
                 Finalizar Compra
               </button>
               <button

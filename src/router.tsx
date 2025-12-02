@@ -6,6 +6,8 @@ import Cadastro from "./pages/auth/Cadastro";
 import ClientePage from "./pages/cliente";
 import MercadoPage from "./pages/cliente/mercado";
 import CarrinhoPage from "./pages/cliente/carrinho";
+import CheckoutPage from "./pages/cliente/checkout";
+import ConfirmadoPage from "./pages/cliente/confirmado";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -41,6 +43,22 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <CarrinhoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/checkout"
+        element={
+          <ProtectedRoute>
+            <CheckoutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/confirmado"
+        element={
+          <ProtectedRoute>
+            <ConfirmadoPage />
           </ProtectedRoute>
         }
       />
