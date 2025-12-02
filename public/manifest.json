@@ -1,24 +1,70 @@
 {
-  "name": "Busquei - Compare e Economize",
+  "name": "Busquei – Entregas Inteligentes",
   "short_name": "Busquei",
-  "description": "Encontre os melhores preços em mercados, farmácias e muito mais",
+  "description": "Compare preços e economize em mercados, farmácias, petshops e muito mais",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAFAFA",
   "theme_color": "#14C57C",
   "orientation": "portrait",
+  "categories": ["shopping", "food", "lifestyle"],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
+      "src": "/icons/icon-180.png",
+      "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Meu Carrinho",
+      "short_name": "Carrinho",
+      "url": "/cliente/carrinho",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Lista Inteligente",
+      "short_name": "Lista",
+      "url": "/cliente/lista-inteligente",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
