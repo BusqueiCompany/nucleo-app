@@ -9,6 +9,8 @@ import CarrinhoPage from "./pages/cliente/carrinho";
 import CheckoutPage from "./pages/cliente/checkout";
 import ConfirmadoPage from "./pages/cliente/confirmado";
 import TrackingPage from "./pages/cliente/tracking";
+import ListaInteligentePage from "./pages/cliente/lista-inteligente";
+import ListaInteligenteResultPage from "./pages/cliente/lista-inteligente-result";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -68,6 +70,22 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <TrackingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/lista-inteligente"
+        element={
+          <ProtectedRoute>
+            <ListaInteligentePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/lista-inteligente-result"
+        element={
+          <ProtectedRoute>
+            <ListaInteligenteResultPage />
           </ProtectedRoute>
         }
       />
