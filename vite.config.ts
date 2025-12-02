@@ -16,6 +16,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['leaflet', 'react-leaflet'],
+    exclude: ['leaflet', 'react-leaflet'],
   },
 }));
