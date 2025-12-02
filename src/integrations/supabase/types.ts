@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      delivery_drivers: {
+        Row: {
+          created_at: string | null
+          foto_url: string | null
+          id: string
+          nome: string
+          placa: string | null
+          status_online: boolean | null
+          telefone: string
+          user_id: string
+          veiculo: string
+        }
+        Insert: {
+          created_at?: string | null
+          foto_url?: string | null
+          id?: string
+          nome: string
+          placa?: string | null
+          status_online?: boolean | null
+          telefone: string
+          user_id: string
+          veiculo: string
+        }
+        Update: {
+          created_at?: string | null
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          placa?: string | null
+          status_online?: boolean | null
+          telefone?: string
+          user_id?: string
+          veiculo?: string
+        }
+        Relationships: []
+      }
       establishment_partners: {
         Row: {
           admin: boolean | null
