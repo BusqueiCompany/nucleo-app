@@ -21,6 +21,14 @@ export interface ResultadoComparacao {
   itensDetalhados: ItemDetalhado[];
 }
 
+export interface SugestaoSimilar {
+  original: string;
+  melhorOpcao: string;
+  precoOriginal: number;
+  precoSugerido: number;
+  economia: number;
+}
+
 export async function compararPrecos(
   listaItens: ListItem[]
 ): Promise<ResultadoComparacao[]> {
@@ -128,6 +136,111 @@ export async function compararPrecos(
     return resultados;
   } catch (error) {
     console.error("Erro ao comparar preços:", error);
+    throw error;
+  }
+}
+
+export async function sugerirSimilares(
+  listaItens: ListItem[]
+): Promise<SugestaoSimilar[]> {
+  try {
+    // 1. Buscar todos os produtos
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("*");
+
+    if (productsError) throw productsError;
+    if (!products || products.length === 0) {
+      throw new Error("Nenhum produto encontrado");
+    }
+
+    // 2. Buscar todos os preços
+    const { data: marketProducts, error: marketProductsError } = await supabase
+      .from("market_products")
+      .select("*");
+
+    if (marketProductsError) throw marketProductsError;
+    if (!marketProducts || marketProducts.length === 0) {
+      throw new Error("Nenhum preço encontrado");
+    }
+
+    const sugestoes: SugestaoSimilar[] = [];
+
+    for (const item of listaItens) {
+      // Buscar produto original pelo nome
+      const produtoOriginal = products.find(
+        (p) => p.nome.toLowerCase() === item.nome.toLowerCase()
+      );
+
+      if (!produtoOriginal) {
+        console.warn(`Produto não encontrado: ${item.nome}`);
+        continue;
+      }
+
+      // Buscar preço mais comum do produto original (média dos preços)
+      const precosOriginais = marketProducts.filter(
+        (mp) => mp.product_id === produtoOriginal.id
+      );
+
+      if (precosOriginais.length === 0) continue;
+
+      // Calcular preço médio do original
+      const precoOriginal =
+        precosOriginais.reduce((sum, mp) => sum + Number(mp.preco), 0) /
+        precosOriginais.length;
+
+      // Buscar produtos similares da mesma categoria e unidade
+      const produtosSimilares = products.filter(
+        (p) =>
+          p.categoria === produtoOriginal.categoria &&
+          p.unidade === produtoOriginal.unidade &&
+          p.id !== produtoOriginal.id
+      );
+
+      // Para cada produto similar, encontrar o menor preço
+      let melhorAlternativa: {
+        produto: any;
+        menorPreco: number;
+      } | null = null;
+
+      for (const similar of produtosSimilares) {
+        const precosSimilar = marketProducts.filter(
+          (mp) => mp.product_id === similar.id
+        );
+
+        if (precosSimilar.length === 0) continue;
+
+        const menorPreco = Math.min(
+          ...precosSimilar.map((mp) => Number(mp.preco))
+        );
+
+        if (!melhorAlternativa || menorPreco < melhorAlternativa.menorPreco) {
+          melhorAlternativa = {
+            produto: similar,
+            menorPreco: menorPreco,
+          };
+        }
+      }
+
+      // Se encontrou alternativa mais barata, adicionar à lista
+      if (melhorAlternativa && melhorAlternativa.menorPreco < precoOriginal) {
+        const economia = precoOriginal - melhorAlternativa.menorPreco;
+        sugestoes.push({
+          original: produtoOriginal.nome,
+          melhorOpcao: melhorAlternativa.produto.nome,
+          precoOriginal: Number(precoOriginal.toFixed(2)),
+          precoSugerido: Number(melhorAlternativa.menorPreco.toFixed(2)),
+          economia: Number(economia.toFixed(2)),
+        });
+      }
+    }
+
+    // Ordenar por maior economia
+    sugestoes.sort((a, b) => b.economia - a.economia);
+
+    return sugestoes;
+  } catch (error) {
+    console.error("Erro ao sugerir similares:", error);
     throw error;
   }
 }

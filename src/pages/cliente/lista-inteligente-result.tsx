@@ -5,7 +5,7 @@ import BottomTabs from "@/components/ui/BottomTabs";
 import { ArrowLeft, TrendingDown, MapPin, Crown, ShoppingBag, Loader2 } from "lucide-react";
 import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { compararPrecos, ResultadoComparacao } from "@/services/comparadorService";
+import { compararPrecos, ResultadoComparacao, sugerirSimilares, SugestaoSimilar } from "@/services/comparadorService";
 import { toast } from "sonner";
 
 interface ListItem {
@@ -19,7 +19,11 @@ const ListaInteligenteResultPage = () => {
   const location = useLocation();
   const items = (location.state?.items as ListItem[]) || [];
   const [resultados, setResultados] = useState<ResultadoComparacao[]>([]);
+  const [sugestoes, setSugestoes] = useState<SugestaoSimilar[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSugestoes, setLoadingSugestoes] = useState(false);
+  // Mock VIP status - em produção viria do contexto de autenticação
+  const isVIP = false;
 
   useEffect(() => {
     if (items.length === 0) {
@@ -37,6 +41,19 @@ const ListaInteligenteResultPage = () => {
         
         const resultadosComparacao = await compararPrecos(listaParaComparar);
         setResultados(resultadosComparacao);
+
+        // Se for VIP, buscar sugestões automaticamente
+        if (isVIP) {
+          setLoadingSugestoes(true);
+          try {
+            const sugestoesResult = await sugerirSimilares(listaParaComparar);
+            setSugestoes(sugestoesResult);
+          } catch (error) {
+            console.error("Erro ao buscar sugestões:", error);
+          } finally {
+            setLoadingSugestoes(false);
+          }
+        }
       } catch (error) {
         console.error("Erro ao comparar preços:", error);
         toast.error("Erro ao buscar preços dos mercados");
@@ -46,7 +63,7 @@ const ListaInteligenteResultPage = () => {
     }
 
     buscarComparacao();
-  }, [items, navigate]);
+  }, [items, navigate, isVIP]);
 
   if (items.length === 0) {
     return null;
@@ -174,16 +191,95 @@ const ListaInteligenteResultPage = () => {
           </>
         )}
 
-        {/* VIP Features */}
-        <button
-          onClick={() =>
-            alert("Recurso exclusivo VIP! Assine para desbloquear.")
-          }
-          className="w-full bg-gradient-to-r from-amber-400 to-amber-600 text-white rounded-[1.5rem] py-4 shadow-lg hover:shadow-xl transition-shadow font-semibold mb-3 flex items-center justify-center gap-2"
-        >
-          <Crown className="h-5 w-5" />
-          Ver itens similares mais baratos (VIP)
-        </button>
+        {/* VIP Suggestions Section */}
+        {isVIP ? (
+          <>
+            {loadingSugestoes ? (
+              <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+                  <p className="text-muted-foreground">
+                    Buscando itens similares...
+                  </p>
+                </div>
+              </div>
+            ) : sugestoes.length > 0 ? (
+              <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-[1.5rem] p-6 shadow-md mb-4 border-2 border-amber-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <Crown className="h-6 w-6 text-amber-600" />
+                  <h2 className="text-xl font-bold text-foreground">
+                    Sugestões VIP - Itens Similares Mais Baratos
+                  </h2>
+                </div>
+                <div className="space-y-3 mb-4">
+                  {sugestoes.map((sugestao, index) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-xl p-4 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Em vez de:{" "}
+                            <span className="line-through">
+                              {sugestao.original}
+                            </span>
+                          </p>
+                          <p className="font-semibold text-foreground">
+                            Experimente: {sugestao.melhorOpcao}
+                          </p>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="text-sm text-muted-foreground line-through">
+                            R$ {sugestao.precoOriginal.toFixed(2)}
+                          </p>
+                          <p className="text-lg font-bold text-green-600">
+                            R$ {sugestao.precoSugerido.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-green-600 font-medium">
+                            Economize R$ {sugestao.economia.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-amber-200 rounded-xl p-4 text-center">
+                  <p className="text-sm font-medium text-amber-900">
+                    💰 Economia total possível:{" "}
+                    <span className="text-lg font-bold">
+                      R${" "}
+                      {sugestoes
+                        .reduce((sum, s) => sum + s.economia, 0)
+                        .toFixed(2)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-[1.5rem] p-6 shadow-md mb-4 border-2 border-amber-300">
+            <div className="text-center">
+              <Crown className="h-12 w-12 text-amber-600 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                Recurso Exclusivo VIP
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Descubra itens similares mais baratos e economize ainda mais nas
+                suas compras!
+              </p>
+              <button
+                onClick={() =>
+                  alert("Em breve: Sistema de assinatura VIP!")
+                }
+                className="bg-gradient-to-r from-amber-400 to-amber-600 text-white rounded-xl px-6 py-3 font-semibold hover:shadow-lg transition-shadow"
+              >
+                Assinar VIP
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Choose Market Button */}
         <button
