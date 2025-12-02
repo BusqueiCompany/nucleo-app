@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import BottomTabs from "@/components/ui/BottomTabs";
-import { ArrowLeft, Phone, Bike, MapPin, Radio } from "lucide-react";
+import { ArrowLeft, Phone, Bike, MapPin, Radio, MessageCircle, Clock } from "lucide-react";
 import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
@@ -9,6 +9,17 @@ import { buscarPedidoPorId, OrderWithItems } from "@/services/orderService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listenToOrder } from "@/services/realtimeService";
 import { toast } from "sonner";
+import TrackingMap from "@/components/map/TrackingMap";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CheckCircle2 } from "lucide-react";
+
+// Posições mock para demonstração (Zona Oeste RJ)
+const MOCK_POSITIONS = {
+  establishment: { lat: -22.9064, lng: -43.5607 },
+  customer: { lat: -22.9150, lng: -43.5500 },
+  driver: { lat: -22.9100, lng: -43.5550 }
+};
 
 const TrackingPage = () => {
   const navigate = useNavigate();
@@ -18,6 +29,21 @@ const TrackingPage = () => {
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(false);
   const [highlight, setHighlight] = useState(false);
+  const [showDeliveredModal, setShowDeliveredModal] = useState(false);
+  const [driverPosition, setDriverPosition] = useState(MOCK_POSITIONS.driver);
+
+  // Simular movimento do entregador
+  useEffect(() => {
+    if (pedido?.status === "a_caminho" || pedido?.status === "retirado") {
+      const interval = setInterval(() => {
+        setDriverPosition(prev => ({
+          lat: prev.lat + (Math.random() - 0.3) * 0.0008,
+          lng: prev.lng + (Math.random() - 0.3) * 0.0008
+        }));
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [pedido?.status]);
 
   useEffect(() => {
     if (!orderId) {
@@ -45,6 +71,11 @@ const TrackingPage = () => {
 
         // Mostrar toast com mudança de status
         toast.success(`Status atualizado: ${getStatusLabel(payload.new.status)}`);
+
+        // Mostrar modal quando entregue
+        if (payload.new.status === "entregue") {
+          setShowDeliveredModal(true);
+        }
 
         // Remover highlight após animação
         setTimeout(() => setHighlight(false), 2000);
@@ -110,6 +141,8 @@ const TrackingPage = () => {
     };
     return labels[status] || status;
   };
+
+  const isDriverOnRoute = pedido?.status === "a_caminho" || pedido?.status === "retirado";
 
   const steps = pedido ? getSteps(pedido.status) : [];
   const currentStep = steps.findIndex((s) => s.status === "active") + 1;
@@ -205,6 +238,33 @@ const TrackingPage = () => {
           </div>
         </div>
 
+        {/* Mapa com Tracking Real */}
+        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] shadow-md mb-4 overflow-hidden">
+          <div className="h-64 relative">
+            <TrackingMap
+              establishmentPosition={MOCK_POSITIONS.establishment}
+              customerPosition={MOCK_POSITIONS.customer}
+              driverPosition={isDriverOnRoute ? driverPosition : undefined}
+              showDriverRoute={isDriverOnRoute}
+              establishmentName={pedido.establishments?.nome || "Estabelecimento"}
+              driverName="Carlos Matos"
+            />
+          </div>
+        </div>
+
+        {/* Delivery Estimate */}
+        <div className="bg-primary/10 backdrop-blur-md rounded-[1.5rem] p-4 shadow-md mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+              <Clock className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Previsão de entrega</p>
+              <p className="text-xl font-bold text-foreground">12–18 min</p>
+            </div>
+          </div>
+        </div>
+
         {/* Delivery Person Card */}
         <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
           <h2 className="text-lg font-semibold text-foreground mb-4">
@@ -222,53 +282,52 @@ const TrackingPage = () => {
                 <span className="ml-2">•</span>
                 <span className="ml-2">RST-4E22</span>
               </div>
+              {isDriverOnRoute && (
+                <p className="text-xs text-primary mt-1 font-medium">
+                  A caminho do seu endereço
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full h-11 w-11 border-primary text-primary hover:bg-primary hover:text-white"
+                onClick={() => window.open("tel:+5521999998888", "_self")}
+              >
+                <Phone className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="default"
+                size="icon"
+                className="rounded-full h-11 w-11 bg-primary hover:bg-primary/90"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Map Placeholder */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
-          <div className="bg-gradient-to-br from-gradient-start/10 to-gradient-end/10 rounded-[1rem] h-48 flex items-center justify-center">
-            <p className="text-muted-foreground font-medium">Mapa aqui</p>
-          </div>
-        </div>
-
-        {/* Delivery Estimate */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-2">
-              Previsão de entrega
-            </p>
-            <p className="text-2xl font-bold text-gradient-end">
-              Chega em 12–18 min
-            </p>
-          </div>
-        </div>
-
-        {/* Delivery Person Location */}
+        {/* Delivery Address */}
         <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center flex-shrink-0">
-              <Bike className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <MapPin className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-foreground mb-1">
-                Localização do entregador
+                Endereço de entrega
               </h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                O entregador está em movimento
+              <p className="text-sm text-muted-foreground">
+                {pedido.endereco_entrega}
               </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3" />
-                <span>-23.5505° S, -46.6333° W</span>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Call Button */}
         <button
-          onClick={() => alert("Ligando para o entregador...")}
+          onClick={() => window.open("tel:+5521999998888", "_self")}
           className="w-full bg-gradient-to-r from-gradient-start to-gradient-end text-white rounded-[1.5rem] py-4 shadow-lg hover:shadow-xl transition-shadow font-semibold flex items-center justify-center gap-2 mb-4"
         >
           <Phone className="h-5 w-5" />
@@ -284,6 +343,36 @@ const TrackingPage = () => {
           { icon: User, label: "Perfil", path: "/cliente/perfil" },
         ]}
       />
+
+      {/* Modal de pedido entregue */}
+      <Dialog open={showDeliveredModal} onOpenChange={setShowDeliveredModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="h-12 w-12 text-primary" />
+                </div>
+                <span className="text-2xl">Pedido Entregue!</span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              Seu pedido foi entregue com sucesso. Esperamos que você aproveite!
+            </p>
+            <Button
+              className="w-full bg-primary hover:bg-primary/90"
+              onClick={() => {
+                setShowDeliveredModal(false);
+                navigate("/cliente");
+              }}
+            >
+              Voltar para Home
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
