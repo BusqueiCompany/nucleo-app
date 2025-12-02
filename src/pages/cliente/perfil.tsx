@@ -348,7 +348,7 @@ const PerfilPage = () => {
               </button>
 
               <button
-                onClick={() => toast.info("Em breve: Suporte")}
+                onClick={() => navigate("/cliente/suporte")}
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
               >
                 <MessageCircle className="h-5 w-5 text-muted-foreground" />

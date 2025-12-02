@@ -13,6 +13,8 @@ import ListaInteligentePage from "./pages/cliente/lista-inteligente";
 import ListaInteligenteResultPage from "./pages/cliente/lista-inteligente-result";
 import VIPPage from "./pages/cliente/vip";
 import PerfilPage from "./pages/cliente/perfil";
+import ClienteSuportePage from "./pages/cliente/suporte";
+import SuporteDetalhePage from "./pages/cliente/suporte-detalhe";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -104,6 +106,22 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <PerfilPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/suporte"
+        element={
+          <ProtectedRoute>
+            <ClienteSuportePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/suporte/:ticketId"
+        element={
+          <ProtectedRoute>
+            <SuporteDetalhePage />
           </ProtectedRoute>
         }
       />
