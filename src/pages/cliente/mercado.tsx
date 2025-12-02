@@ -4,10 +4,11 @@ import { useState } from "react";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import BottomTabs from "@/components/ui/BottomTabs";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/contexts/CartContext";
 
 const MercadoPage = () => {
   const navigate = useNavigate();
-  const [cartCount, setCartCount] = useState(0);
+  const { addItem, totalItems } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const categories = ["Carnes", "Hortifruti", "Laticínios", "Bebidas", "Higiene"];
@@ -27,8 +28,14 @@ const MercadoPage = () => {
     { icon: User, label: "Perfil", path: "/cliente/perfil" },
   ];
 
-  const handleAddToCart = () => {
-    setCartCount(cartCount + 1);
+  const handleAddToCart = (product: typeof products[0]) => {
+    addItem({
+      id: product.id,
+      nome: product.name,
+      preco: product.price,
+      imagem: product.image,
+      mercadoId: "mercado-proximo",
+    });
   };
 
   return (
@@ -107,7 +114,7 @@ const MercadoPage = () => {
                     </p>
                   </div>
                   <button
-                    onClick={handleAddToCart}
+                    onClick={() => handleAddToCart(product)}
                     className="w-10 h-10 bg-gradient-to-r from-gradient-start to-gradient-end rounded-full shadow-md flex items-center justify-center hover:shadow-lg transition-shadow"
                   >
                     <Plus className="h-5 w-5 text-white" />
@@ -120,14 +127,14 @@ const MercadoPage = () => {
       </BusqueiLayout>
 
       {/* Botão flutuante do Carrinho */}
-      {cartCount > 0 && (
+      {totalItems > 0 && (
         <button
           onClick={() => navigate("/cliente/carrinho")}
           className="fixed bottom-24 right-6 w-16 h-16 bg-gradient-to-r from-gradient-start to-gradient-end rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all z-50"
         >
           <ShoppingCart className="h-6 w-6 text-white" />
           <span className="absolute -top-1 -right-1 bg-white text-gradient-end text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
-            {cartCount}
+            {totalItems}
           </span>
         </button>
       )}
