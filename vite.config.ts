@@ -13,10 +13,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "leaflet": "leaflet/dist/leaflet-src.esm.js",
     },
   },
   optimizeDeps: {
-    include: ['leaflet', 'react-leaflet'],
+    exclude: ['leaflet'],
   },
 }));
