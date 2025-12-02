@@ -25,7 +25,9 @@ import ParceiroPedidosPage from "./pages/parceiro/pedidos";
 import ParceiroAnalyticsPage from "./pages/parceiro/analytics";
 import SuporteTicketsPage from "./pages/suporte/tickets";
 import SuporteTicketDetalhePage from "./pages/suporte/ticket-detalhe";
-import AdmPage from "./pages/adm";
+import AdmDashboardPage from "./pages/adm/dashboard";
+import AdmEstabelecimentosPage from "./pages/adm/estabelecimentos";
+import AdmNotificacoesPage from "./pages/adm/notificacoes";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -224,7 +226,23 @@ const AppRouter = () => {
         path="/adm"
         element={
           <ProtectedRoute>
-            <AdmPage />
+            <AdmDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/adm/estabelecimentos"
+        element={
+          <ProtectedRoute>
+            <AdmEstabelecimentosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/adm/notificacoes"
+        element={
+          <ProtectedRoute>
+            <AdmNotificacoesPage />
           </ProtectedRoute>
         }
       />
