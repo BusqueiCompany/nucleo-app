@@ -11,6 +11,7 @@ import ConfirmadoPage from "./pages/cliente/confirmado";
 import TrackingPage from "./pages/cliente/tracking";
 import ListaInteligentePage from "./pages/cliente/lista-inteligente";
 import ListaInteligenteResultPage from "./pages/cliente/lista-inteligente-result";
+import VIPPage from "./pages/cliente/vip";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -86,6 +87,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <ListaInteligenteResultPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/vip"
+        element={
+          <ProtectedRoute>
+            <VIPPage />
           </ProtectedRoute>
         }
       />
