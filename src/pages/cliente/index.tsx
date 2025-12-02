@@ -1,4 +1,4 @@
-import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain, Crown } from "lucide-react";
+import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain, Crown, AlertTriangle, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import GradientHeader from "@/components/ui/GradientHeader";
@@ -7,10 +7,26 @@ import CategoryButton from "@/components/ui/CategoryButton";
 import BottomTabs from "@/components/ui/BottomTabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useVipStatus } from "@/hooks/useVipStatus";
+import { useEffect, useState } from "react";
+import { listarAtivas, PriorityRoute } from "@/services/priorityRoutesService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ClientePage = () => {
   const navigate = useNavigate();
   const { isActive: isVIP } = useVipStatus();
+  const [rotasPrioritarias, setRotasPrioritarias] = useState<PriorityRoute[]>([]);
+  const [loadingRotas, setLoadingRotas] = useState(true);
+
+  useEffect(() => {
+    carregarRotas();
+  }, []);
+
+  const carregarRotas = async () => {
+    setLoadingRotas(true);
+    const rotas = await listarAtivas();
+    setRotasPrioritarias(rotas);
+    setLoadingRotas(false);
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -53,6 +69,60 @@ const ClientePage = () => {
 
         <div className="space-y-6">
           <SearchBar placeholder="Buscar estabelecimentos, produtos..." />
+
+          {/* Rotas Prioritárias */}
+          {!loadingRotas && rotasPrioritarias.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-primary" />
+                Ofertas Especiais
+              </h2>
+              <ScrollArea className="w-full whitespace-nowrap">
+                <div className="flex gap-4 pb-2">
+                  {rotasPrioritarias.map((rota) => (
+                    <div
+                      key={rota.id}
+                      onClick={() => {
+                        // TODO: implementar navegação para produto
+                        navigate("/cliente/mercado");
+                      }}
+                      className="relative bg-gradient-to-br from-amber-400/20 via-orange-400/20 to-red-400/20 backdrop-blur-md rounded-[1.5rem] p-5 shadow-lg hover:shadow-xl transition-all cursor-pointer min-w-[280px] border-2 border-amber-400/30"
+                    >
+                      <div className="absolute top-3 right-3">
+                        <AlertTriangle className="h-6 w-6 text-amber-600" />
+                      </div>
+                      
+                      <div className="mb-3">
+                        <h3 className="text-xl font-bold text-foreground mb-1">
+                          {rota.produto}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {rota.establishments?.nome || "Estabelecimento"}
+                        </p>
+                      </div>
+                      
+                      <p className="text-sm text-foreground font-medium mb-4">
+                        {rota.mensagem}
+                      </p>
+                      
+                      <button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl py-2.5 px-4 font-semibold flex items-center justify-center gap-2 hover:from-amber-600 hover:to-orange-600 transition-all">
+                        <span>Pedir agora</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
+          )}
+
+          {loadingRotas && (
+            <div>
+              <Skeleton className="h-6 w-48 mb-4" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+          )}
 
           {/* VIP Banner */}
           {!isVIP && (
