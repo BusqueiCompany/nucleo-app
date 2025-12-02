@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      establishments: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          distancia_metros: number | null
+          foto_url: string | null
+          funcionamento_abre: string | null
+          funcionamento_fecha: string | null
+          id: string
+          nome: string
+          preco_nivel: string | null
+          tempo_entrega_min: number | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          distancia_metros?: number | null
+          foto_url?: string | null
+          funcionamento_abre?: string | null
+          funcionamento_fecha?: string | null
+          id?: string
+          nome: string
+          preco_nivel?: string | null
+          tempo_entrega_min?: number | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          distancia_metros?: number | null
+          foto_url?: string | null
+          funcionamento_abre?: string | null
+          funcionamento_fecha?: string | null
+          id?: string
+          nome?: string
+          preco_nivel?: string | null
+          tempo_entrega_min?: number | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       market_products: {
         Row: {
           id: string
