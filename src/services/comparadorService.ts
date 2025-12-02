@@ -55,7 +55,7 @@ export async function compararPrecos(
 
     // 3. Buscar todos os preços
     const { data: marketProducts, error: marketProductsError } = await supabase
-      .from("market_products")
+      .from("establishment_products")
       .select("*");
 
     if (marketProductsError) throw marketProductsError;
@@ -68,10 +68,10 @@ export async function compararPrecos(
       products.map((p) => [p.nome.toLowerCase(), p.id])
     );
 
-    // 5. Criar mapa de preços por market_id e product_id
+    // 5. Criar mapa de preços por establishment_id e product_id
     const priceMap = new Map<string, number>();
     marketProducts.forEach((mp) => {
-      const key = `${mp.market_id}_${mp.product_id}`;
+      const key = `${mp.establishment_id}_${mp.product_id}`;
       priceMap.set(key, mp.preco);
     });
 
@@ -156,7 +156,7 @@ export async function sugerirSimilares(
 
     // 2. Buscar todos os preços
     const { data: marketProducts, error: marketProductsError } = await supabase
-      .from("market_products")
+      .from("establishment_products")
       .select("*");
 
     if (marketProductsError) throw marketProductsError;
