@@ -1,4 +1,5 @@
 import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import GradientHeader from "@/components/ui/GradientHeader";
 import SearchBar from "@/components/ui/SearchBar";
@@ -33,6 +34,8 @@ const ClientePage = () => {
     { name: "Supermercado Econômico", distance: "850m" },
     { name: "Mercado Central", distance: "1.2km" },
   ];
+
+  const navigate = useNavigate();
 
   const tabs = [
     { icon: Home, label: "Início", path: "/cliente" },
@@ -102,6 +105,7 @@ const ClientePage = () => {
               {nearbyMarkets.map((market, i) => (
                 <div
                   key={i}
+                  onClick={() => navigate("/cliente/mercado")}
                   className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
