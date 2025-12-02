@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import AuthPage from "./pages/auth";
 import Login from "./pages/auth/Login";
@@ -10,6 +9,7 @@ import MercadoPage from "./pages/cliente/mercado";
 import CarrinhoPage from "./pages/cliente/carrinho";
 import CheckoutPage from "./pages/cliente/checkout";
 import ConfirmadoPage from "./pages/cliente/confirmado";
+import TrackingPage from "./pages/cliente/tracking";
 import ListaInteligentePage from "./pages/cliente/lista-inteligente";
 import ListaInteligenteResultPage from "./pages/cliente/lista-inteligente-result";
 import VIPPage from "./pages/cliente/vip";
@@ -32,10 +32,6 @@ import AdmNotificacoesPage from "./pages/adm/notificacoes";
 import AdmRotasPrioritariasPage from "./pages/adm/rotas-prioritarias";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Lazy load TrackingPage to avoid Leaflet import issues
-const TrackingPage = lazy(() => import("./pages/cliente/tracking"));
 
 const OnboardingGuard = ({ children }: { children: React.ReactNode }) => {
   const hasCompletedOnboarding = localStorage.getItem("onboarding_completed");
@@ -99,15 +95,7 @@ const AppRouter = () => {
         path="/cliente/tracking"
         element={
           <ProtectedRoute>
-            <Suspense fallback={
-              <div className="min-h-screen bg-gradient-to-b from-gradient-start to-gradient-end p-4">
-                <Skeleton className="h-20 w-full mb-4" />
-                <Skeleton className="h-64 w-full mb-4" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-            }>
-              <TrackingPage />
-            </Suspense>
+            <TrackingPage />
           </ProtectedRoute>
         }
       />
