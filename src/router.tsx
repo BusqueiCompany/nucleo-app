@@ -16,6 +16,7 @@ import VIPPage from "./pages/cliente/vip";
 import PerfilPage from "./pages/cliente/perfil";
 import ClienteSuportePage from "./pages/cliente/suporte";
 import SuporteDetalhePage from "./pages/cliente/suporte-detalhe";
+import MapaClientePage from "./pages/cliente/mapa";
 import EntregadorDashboardPage from "./pages/entregador/dashboard";
 import EntregadorRotasPage from "./pages/entregador/rotas";
 import EntregadorGanhosPage from "./pages/entregador/ganhos";
@@ -144,6 +145,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <SuporteDetalhePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/mapa"
+        element={
+          <ProtectedRoute>
+            <MapaClientePage />
           </ProtectedRoute>
         }
       />
