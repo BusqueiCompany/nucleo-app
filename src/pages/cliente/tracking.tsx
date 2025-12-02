@@ -1,22 +1,95 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import BottomTabs from "@/components/ui/BottomTabs";
 import { ArrowLeft, Phone, Bike, MapPin } from "lucide-react";
 import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useEffect, useState } from "react";
+import { buscarPedidoPorId, OrderWithItems } from "@/services/orderService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TrackingPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get("id");
+  const [pedido, setPedido] = useState<OrderWithItems | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const steps = [
-    { label: "Pedido recebido", status: "completed" },
-    { label: "Separando itens", status: "completed" },
-    { label: "A caminho", status: "active" },
-    { label: "Entregando", status: "pending" },
-  ];
+  useEffect(() => {
+    if (!orderId) {
+      navigate("/cliente");
+      return;
+    }
 
-  const currentStep = 3;
+    carregarPedido();
+  }, [orderId, navigate]);
+
+  const carregarPedido = async () => {
+    if (!orderId) return;
+
+    setLoading(true);
+    const data = await buscarPedidoPorId(orderId);
+    setPedido(data);
+    setLoading(false);
+  };
+
+  const getSteps = (status: string) => {
+    const allSteps = [
+      { label: "Pedido recebido", status: "completed" },
+      { label: "Preparando", status: "pending" },
+      { label: "Pronto", status: "pending" },
+      { label: "A caminho", status: "pending" },
+      { label: "Entregue", status: "pending" },
+    ];
+
+    const statusIndex: { [key: string]: number } = {
+      pendente: 0,
+      preparando: 1,
+      pronto: 2,
+      "aguardando-entregador": 2,
+      retirado: 3,
+      a_caminho: 3,
+      entregue: 4,
+    };
+
+    const currentIndex = statusIndex[status] || 0;
+
+    return allSteps.map((step, index) => ({
+      ...step,
+      status:
+        index < currentIndex
+          ? "completed"
+          : index === currentIndex
+          ? "active"
+          : "pending",
+    }));
+  };
+
+  const steps = pedido ? getSteps(pedido.status) : [];
+  const currentStep = steps.findIndex((s) => s.status === "active") + 1;
   const progressValue = (currentStep / steps.length) * 100;
+
+  if (loading) {
+    return (
+      <BusqueiLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </BusqueiLayout>
+    );
+  }
+
+  if (!pedido) {
+    return (
+      <BusqueiLayout>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Pedido não encontrado</p>
+        </div>
+      </BusqueiLayout>
+    );
+  }
 
   return (
     <>
@@ -29,9 +102,14 @@ const TrackingPage = () => {
           >
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
-          <h1 className="text-2xl font-bold text-foreground">
-            Acompanhamento da Entrega
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              Pedido #{pedido.id.slice(0, 8)}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {pedido.establishments?.nome || "Estabelecimento"}
+            </p>
+          </div>
         </div>
 
         {/* Progress Steps */}

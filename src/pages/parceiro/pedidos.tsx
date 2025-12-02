@@ -6,6 +6,7 @@ import GradientHeader from "@/components/ui/GradientHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,21 +15,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClipboardList, Clock, Package, CheckCircle } from "lucide-react";
-
-interface PedidoFake {
-  id: string;
-  numero: string;
-  cliente: string;
-  valor: number;
-  status: "pendente" | "preparando" | "pronto" | "entregue";
-  itens: number;
-  horario: string;
-}
+import {
+  listarPedidosDoEstabelecimento,
+  atualizarStatusPedido,
+  OrderWithItems,
+} from "@/services/orderService";
+import { toast } from "sonner";
 
 const ParceiroPedidosPage = () => {
   const navigate = useNavigate();
   const { isParceiroUser, loading: roleLoading } = useParceiroRole();
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [pedidos, setPedidos] = useState<OrderWithItems[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // TODO: Pegar o establishment_id do parceiro logado
+  const establishmentId = "seu-establishment-id-aqui";
 
   useEffect(() => {
     if (roleLoading) return;
@@ -37,52 +39,32 @@ const ParceiroPedidosPage = () => {
       navigate("/");
       return;
     }
+
+    carregarPedidos();
   }, [roleLoading, isParceiroUser, navigate]);
 
-  // Dados fake
-  const pedidosFake: PedidoFake[] = [
-    {
-      id: "1",
-      numero: "#1234",
-      cliente: "João Silva",
-      valor: 87.5,
-      status: "pendente",
-      itens: 12,
-      horario: "14:32",
-    },
-    {
-      id: "2",
-      numero: "#1233",
-      cliente: "Maria Santos",
-      valor: 145.8,
-      status: "preparando",
-      itens: 8,
-      horario: "14:15",
-    },
-    {
-      id: "3",
-      numero: "#1232",
-      cliente: "Pedro Costa",
-      valor: 56.3,
-      status: "pronto",
-      itens: 5,
-      horario: "13:58",
-    },
-    {
-      id: "4",
-      numero: "#1231",
-      cliente: "Ana Oliveira",
-      valor: 234.9,
-      status: "entregue",
-      itens: 15,
-      horario: "13:20",
-    },
-  ];
+  const carregarPedidos = async () => {
+    setLoading(true);
+    const data = await listarPedidosDoEstabelecimento(establishmentId);
+    setPedidos(data);
+    setLoading(false);
+  };
+
+  const handleAtualizarStatus = async (orderId: string, novoStatus: string) => {
+    const resultado = await atualizarStatusPedido(orderId, novoStatus);
+
+    if (resultado.success) {
+      toast.success("Status atualizado!");
+      carregarPedidos();
+    } else {
+      toast.error(resultado.error || "Erro ao atualizar status");
+    }
+  };
 
   const pedidosFiltrados =
     filtroStatus === "todos"
-      ? pedidosFake
-      : pedidosFake.filter((p) => p.status === filtroStatus);
+      ? pedidos
+      : pedidos.filter((p) => p.status === filtroStatus);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -129,7 +111,7 @@ const ParceiroPedidosPage = () => {
     }
   };
 
-  if (roleLoading) {
+  if (roleLoading || loading) {
     return (
       <BusqueiLayout>
         <div className="space-y-4">
@@ -158,6 +140,9 @@ const ParceiroPedidosPage = () => {
               <SelectItem value="pendente">Pendente</SelectItem>
               <SelectItem value="preparando">Preparando</SelectItem>
               <SelectItem value="pronto">Pronto</SelectItem>
+              <SelectItem value="aguardando-entregador">Aguardando Entregador</SelectItem>
+              <SelectItem value="retirado">Retirado</SelectItem>
+              <SelectItem value="a_caminho">A Caminho</SelectItem>
               <SelectItem value="entregue">Entregue</SelectItem>
             </SelectContent>
           </Select>
@@ -178,14 +163,14 @@ const ParceiroPedidosPage = () => {
               key={pedido.id}
               className="p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg hover:shadow-xl transition-all"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4 flex-1">
                   {getStatusIcon(pedido.status)}
 
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-foreground">
-                        {pedido.numero}
+                        #{pedido.id.slice(0, 8)}
                       </h3>
                       <Badge className={getStatusColor(pedido.status)}>
                         {getStatusLabel(pedido.status)}
@@ -193,19 +178,53 @@ const ParceiroPedidosPage = () => {
                     </div>
 
                     <p className="text-sm text-muted-foreground">
-                      Cliente: {pedido.cliente}
+                      Pedido #{pedido.id.slice(0, 8)}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {pedido.itens} itens • {pedido.horario}
+                      {pedido.order_items?.length || 0} itens •{" "}
+                      {new Date(pedido.created_at).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <p className="text-2xl font-bold text-primary">
-                    R$ {pedido.valor.toFixed(2)}
+                    R$ {pedido.valor_total.toFixed(2)}
                   </p>
                 </div>
+              </div>
+
+              {/* Ações baseadas no status */}
+              <div className="flex gap-2">
+                {pedido.status === "pendente" && (
+                  <Button
+                    onClick={() => handleAtualizarStatus(pedido.id, "preparando")}
+                    className="flex-1"
+                  >
+                    Aceitar Pedido
+                  </Button>
+                )}
+                {pedido.status === "preparando" && (
+                  <Button
+                    onClick={() => handleAtualizarStatus(pedido.id, "pronto")}
+                    className="flex-1"
+                  >
+                    Marcar como Pronto
+                  </Button>
+                )}
+                {pedido.status === "pronto" && (
+                  <Button
+                    onClick={() =>
+                      handleAtualizarStatus(pedido.id, "aguardando-entregador")
+                    }
+                    className="flex-1"
+                  >
+                    Aguardando Entregador
+                  </Button>
+                )}
               </div>
             </Card>
           ))
