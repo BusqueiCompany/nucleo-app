@@ -16,7 +16,10 @@ import PerfilPage from "./pages/cliente/perfil";
 import ClienteSuportePage from "./pages/cliente/suporte";
 import SuporteDetalhePage from "./pages/cliente/suporte-detalhe";
 import EntregadorPage from "./pages/entregador";
-import ParceiroPage from "./pages/parceiro";
+import ParceiroDashboardPage from "./pages/parceiro/dashboard";
+import ParceiroProdutosPage from "./pages/parceiro/produtos";
+import ParceiroPedidosPage from "./pages/parceiro/pedidos";
+import ParceiroAnalyticsPage from "./pages/parceiro/analytics";
 import SuporteTicketsPage from "./pages/suporte/tickets";
 import SuporteTicketDetalhePage from "./pages/suporte/ticket-detalhe";
 import AdmPage from "./pages/adm";
@@ -138,7 +141,39 @@ const AppRouter = () => {
         path="/parceiro"
         element={
           <ProtectedRoute>
-            <ParceiroPage />
+            <ParceiroDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parceiro/produtos"
+        element={
+          <ProtectedRoute>
+            <ParceiroProdutosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parceiro/pedidos"
+        element={
+          <ProtectedRoute>
+            <ParceiroPedidosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parceiro/analytics"
+        element={
+          <ProtectedRoute>
+            <ParceiroAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parceiro/promocoes"
+        element={
+          <ProtectedRoute>
+            <ParceiroDashboardPage />
           </ProtectedRoute>
         }
       />
