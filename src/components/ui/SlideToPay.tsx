@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 interface SlideToPayProps {
   onComplete: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
-const SlideToPay = ({ onComplete, className }: SlideToPayProps) => {
+const SlideToPay = ({ onComplete, className, disabled = false }: SlideToPayProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -75,6 +76,7 @@ const SlideToPay = ({ onComplete, className }: SlideToPayProps) => {
       ref={containerRef}
       className={cn(
         "relative h-16 bg-white/80 backdrop-blur-md rounded-full shadow-lg overflow-hidden",
+        disabled && "opacity-50 cursor-not-allowed",
         className
       )}
     >
@@ -105,8 +107,8 @@ const SlideToPay = ({ onComplete, className }: SlideToPayProps) => {
         style={{
           transform: `translateX(${position}px)`,
         }}
-        onMouseDown={() => !isCompleted && setIsDragging(true)}
-        onTouchStart={() => !isCompleted && setIsDragging(true)}
+        onMouseDown={() => !isCompleted && !disabled && setIsDragging(true)}
+        onTouchStart={() => !isCompleted && !disabled && setIsDragging(true)}
       >
         {isCompleted ? (
           <Check className="h-6 w-6 text-white" />

@@ -16,13 +16,22 @@ import {
   atualizarStatusEntrega,
   Delivery,
 } from "@/services/entregadorService";
+import {
+  listarPedidosAguardandoEntregador,
+  vincularEntregador,
+  OrderWithItems,
+} from "@/services/orderService";
 
 const EntregadorRotasPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isEntregadorUser, loading: roleLoading } = useEntregadorRole();
   const [entregas, setEntregas] = useState<Delivery[]>([]);
+  const [pedidosDisponiveis, setPedidosDisponiveis] = useState<OrderWithItems[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
+  const [driverId, setDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (roleLoading) return;
@@ -49,9 +58,33 @@ const EntregadorRotasPage = () => {
       return;
     }
 
+    setDriverId(driver.id);
+
+    // Carregar entregas do driver
     const entregasData = await listarEntregas(driver.id);
     setEntregas(entregasData);
+
+    // Carregar pedidos disponíveis
+    const pedidosData = await listarPedidosAguardandoEntregador();
+    setPedidosDisponiveis(pedidosData);
+
     setLoading(false);
+  };
+
+  const handleAceitarPedido = async (orderId: string) => {
+    if (!driverId) {
+      toast.error("Driver ID não encontrado");
+      return;
+    }
+
+    const resultado = await vincularEntregador(orderId, driverId, 2500, 4.99);
+
+    if (resultado.success) {
+      toast.success("Pedido aceito!");
+      inicializar();
+    } else {
+      toast.error(resultado.error || "Erro ao aceitar pedido");
+    }
   };
 
   const handleAtualizarStatus = async (deliveryId: string, novoStatus: string) => {
@@ -139,6 +172,54 @@ const EntregadorRotasPage = () => {
           </div>
         </div>
       </Card>
+
+      {/* Pedidos Disponíveis */}
+      {pedidosDisponiveis.length > 0 && (
+        <div className="space-y-4 mb-8">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Pedidos Disponíveis ({pedidosDisponiveis.length})
+          </h3>
+
+          {pedidosDisponiveis.map((pedido) => (
+            <Card
+              key={pedido.id}
+              className="p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-semibold text-foreground mb-1">
+                    Pedido #{pedido.id.slice(0, 8)}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {pedido.establishments?.nome || "Estabelecimento"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {pedido.order_items?.length || 0} itens
+                  </p>
+                </div>
+                <Badge className="bg-orange-100 text-orange-800">
+                  Aguardando
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-primary">
+                    R$ {pedido.valor_total.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Taxa entrega: R$ 4,99
+                  </p>
+                </div>
+
+                <Button onClick={() => handleAceitarPedido(pedido.id)}>
+                  Aceitar Pedido
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Lista de Entregas */}
       <div className="space-y-4">

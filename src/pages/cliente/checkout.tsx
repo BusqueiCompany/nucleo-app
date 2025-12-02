@@ -4,10 +4,14 @@ import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import { useCart } from "@/contexts/CartContext";
 import SlideToPay from "@/components/ui/SlideToPay";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { criarPedido } from "@/services/orderService";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, subtotal, addItem } = useCart();
+  const [loading, setLoading] = useState(false);
 
   const taxaEntrega = 4.99;
   const total = subtotal + taxaEntrega;
@@ -19,8 +23,40 @@ const CheckoutPage = () => {
     { id: 104, nome: "Café 500g", preco: 12.5, imagem: "" },
   ];
 
-  const handleComplete = () => {
-    navigate("/cliente/confirmado");
+  const handleComplete = async () => {
+    if (items.length === 0) {
+      toast.error("Seu carrinho está vazio");
+      return;
+    }
+
+    setLoading(true);
+
+    // Pega o establishment_id do primeiro item (assumindo mesmo mercado)
+    const establishmentId = items[0].mercadoId;
+
+    // Prepara os itens do pedido
+    const orderItems = items.map((item) => ({
+      product_id: item.id.toString(), // Converter para string UUID se necessário
+      quantidade: item.qtd,
+      preco_unit: item.preco,
+    }));
+
+    const resultado = await criarPedido(
+      establishmentId,
+      total,
+      "Rua das Flores, 123 - Jardim Primavera - CEP 12345-678",
+      "Cartão de Crédito",
+      orderItems
+    );
+
+    setLoading(false);
+
+    if (resultado.success && resultado.orderId) {
+      toast.success("Pedido criado com sucesso!");
+      navigate(`/cliente/tracking?id=${resultado.orderId}`);
+    } else {
+      toast.error(resultado.error || "Erro ao criar pedido");
+    }
   };
 
   return (
@@ -142,7 +178,7 @@ const CheckoutPage = () => {
       </div>
 
       {/* Slide to Pay */}
-      <SlideToPay onComplete={handleComplete} className="mb-6" />
+      <SlideToPay onComplete={handleComplete} className="mb-6" disabled={loading} />
     </BusqueiLayout>
   );
 };
