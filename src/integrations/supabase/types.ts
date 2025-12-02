@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      market_products: {
+        Row: {
+          id: string
+          market_id: string | null
+          preco: number
+          product_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          market_id?: string | null
+          preco: number
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          market_id?: string | null
+          preco?: number
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_products_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      markets: {
+        Row: {
+          created_at: string | null
+          distancia_metros: number | null
+          foto_url: string | null
+          id: string
+          nome: string
+          tempo_entrega_min: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          distancia_metros?: number | null
+          foto_url?: string | null
+          id?: string
+          nome: string
+          tempo_entrega_min?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          distancia_metros?: number | null
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          tempo_entrega_min?: number | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          id: string
+          nome: string
+          unidade: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          unidade?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          unidade?: string | null
+        }
+        Relationships: []
+      }
       user_details: {
         Row: {
           aceita_campanhas: boolean
