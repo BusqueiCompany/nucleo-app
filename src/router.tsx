@@ -17,7 +17,8 @@ import ClienteSuportePage from "./pages/cliente/suporte";
 import SuporteDetalhePage from "./pages/cliente/suporte-detalhe";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
-import SuportePage from "./pages/suporte";
+import SuporteTicketsPage from "./pages/suporte/tickets";
+import SuporteTicketDetalhePage from "./pages/suporte/ticket-detalhe";
 import AdmPage from "./pages/adm";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -145,7 +146,15 @@ const AppRouter = () => {
         path="/suporte"
         element={
           <ProtectedRoute>
-            <SuportePage />
+            <SuporteTicketsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/suporte/ticket-detalhe"
+        element={
+          <ProtectedRoute>
+            <SuporteTicketDetalhePage />
           </ProtectedRoute>
         }
       />
