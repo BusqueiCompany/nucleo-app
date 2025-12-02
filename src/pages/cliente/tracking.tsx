@@ -1,12 +1,14 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import BottomTabs from "@/components/ui/BottomTabs";
-import { ArrowLeft, Phone, Bike, MapPin } from "lucide-react";
+import { ArrowLeft, Phone, Bike, MapPin, Radio } from "lucide-react";
 import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import { buscarPedidoPorId, OrderWithItems } from "@/services/orderService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { listenToOrder } from "@/services/realtimeService";
+import { toast } from "sonner";
 
 const TrackingPage = () => {
   const navigate = useNavigate();
@@ -14,6 +16,8 @@ const TrackingPage = () => {
   const orderId = searchParams.get("id");
   const [pedido, setPedido] = useState<OrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
+  const [highlight, setHighlight] = useState(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -22,6 +26,35 @@ const TrackingPage = () => {
     }
 
     carregarPedido();
+
+    // Configurar listener realtime
+    const unsubscribe = listenToOrder(orderId, (payload) => {
+      if (payload.eventType === "UPDATE") {
+        setIsLive(true);
+        setHighlight(true);
+        
+        // Atualizar pedido com novo status
+        setPedido((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            status: payload.new.status,
+            updated_at: payload.new.updated_at,
+          };
+        });
+
+        // Mostrar toast com mudança de status
+        toast.success(`Status atualizado: ${getStatusLabel(payload.new.status)}`);
+
+        // Remover highlight após animação
+        setTimeout(() => setHighlight(false), 2000);
+        setTimeout(() => setIsLive(false), 3000);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [orderId, navigate]);
 
   const carregarPedido = async () => {
@@ -65,6 +98,19 @@ const TrackingPage = () => {
     }));
   };
 
+  const getStatusLabel = (status: string) => {
+    const labels: { [key: string]: string } = {
+      pendente: "Pendente",
+      preparando: "Preparando",
+      pronto: "Pronto",
+      "aguardando-entregador": "Aguardando entregador",
+      retirado: "Retirado",
+      a_caminho: "A caminho",
+      entregue: "Entregue",
+    };
+    return labels[status] || status;
+  };
+
   const steps = pedido ? getSteps(pedido.status) : [];
   const currentStep = steps.findIndex((s) => s.status === "active") + 1;
   const progressValue = (currentStep / steps.length) * 100;
@@ -94,6 +140,16 @@ const TrackingPage = () => {
   return (
     <>
       <BusqueiLayout>
+        {/* Live Indicator */}
+        {isLive && (
+          <div className="mb-4 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-xl p-3 flex items-center gap-2 animate-fade-in">
+            <Radio className="h-4 w-4 text-green-500 animate-pulse" />
+            <span className="text-sm font-medium text-green-600 dark:text-green-400">
+              Atualizado em tempo real
+            </span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <button
@@ -113,7 +169,11 @@ const TrackingPage = () => {
         </div>
 
         {/* Progress Steps */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
+        <div
+          className={`bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4 transition-all ${
+            highlight ? "ring-2 ring-primary ring-offset-2 animate-scale-in" : ""
+          }`}
+        >
           <div className="mb-4">
             <Progress value={progressValue} className="h-2 mb-6" />
           </div>

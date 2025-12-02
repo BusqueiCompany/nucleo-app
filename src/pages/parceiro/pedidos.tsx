@@ -14,13 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ClipboardList, Clock, Package, CheckCircle } from "lucide-react";
+import { ClipboardList, Clock, Package, CheckCircle, Radio } from "lucide-react";
 import {
   listarPedidosDoEstabelecimento,
   atualizarStatusPedido,
   OrderWithItems,
 } from "@/services/orderService";
 import { toast } from "sonner";
+import { listenOrders } from "@/services/realtimeService";
 
 const ParceiroPedidosPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ const ParceiroPedidosPage = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [pedidos, setPedidos] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [highlightedOrders, setHighlightedOrders] = useState<Set<string>>(new Set());
+  const [isLive, setIsLive] = useState(false);
 
   // TODO: Pegar o establishment_id do parceiro logado
   const establishmentId = "seu-establishment-id-aqui";
@@ -41,7 +44,60 @@ const ParceiroPedidosPage = () => {
     }
 
     carregarPedidos();
-  }, [roleLoading, isParceiroUser, navigate]);
+
+    // Configurar listener realtime
+    const unsubscribe = listenOrders((payload) => {
+      const isMyEstablishment =
+        payload.new?.establishment_id === establishmentId ||
+        payload.old?.establishment_id === establishmentId;
+
+      if (!isMyEstablishment) return;
+
+      setIsLive(true);
+
+      if (payload.eventType === "INSERT") {
+        // Novo pedido
+        toast.success("Novo pedido recebido!", {
+          description: `Pedido #${payload.new.id.slice(0, 8)}`,
+        });
+        carregarPedidos();
+        
+        // Highlight no novo pedido
+        setHighlightedOrders((prev) => new Set(prev).add(payload.new.id));
+        setTimeout(() => {
+          setHighlightedOrders((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(payload.new.id);
+            return newSet;
+          });
+        }, 3000);
+      } else if (payload.eventType === "UPDATE") {
+        // Status atualizado
+        setPedidos((prev) =>
+          prev.map((p) =>
+            p.id === payload.new.id
+              ? { ...p, status: payload.new.status, updated_at: payload.new.updated_at }
+              : p
+          )
+        );
+        
+        setHighlightedOrders((prev) => new Set(prev).add(payload.new.id));
+        setTimeout(() => {
+          setHighlightedOrders((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(payload.new.id);
+            return newSet;
+          });
+        }, 2000);
+      }
+
+      setTimeout(() => setIsLive(false), 3000);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [roleLoading, isParceiroUser, navigate, establishmentId]);
 
   const carregarPedidos = async () => {
     setLoading(true);
@@ -127,6 +183,16 @@ const ParceiroPedidosPage = () => {
     <BusqueiLayout>
       <GradientHeader>Pedidos</GradientHeader>
 
+      {/* Live Indicator */}
+      {isLive && (
+        <div className="mb-4 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-xl p-3 flex items-center gap-2 animate-fade-in">
+          <Radio className="h-4 w-4 text-green-500 animate-pulse" />
+          <span className="text-sm font-medium text-green-600 dark:text-green-400">
+            Atualizando ao vivo
+          </span>
+        </div>
+      )}
+
       {/* Filtros */}
       <Card className="p-6 mb-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg">
         <div className="flex items-center gap-4">
@@ -161,7 +227,11 @@ const ParceiroPedidosPage = () => {
           pedidosFiltrados.map((pedido) => (
             <Card
               key={pedido.id}
-              className="p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg hover:shadow-xl transition-all"
+              className={`p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg hover:shadow-xl transition-all ${
+                highlightedOrders.has(pedido.id)
+                  ? "ring-2 ring-primary ring-offset-2 animate-scale-in"
+                  : ""
+              }`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4 flex-1">
