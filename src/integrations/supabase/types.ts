@@ -155,12 +155,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vip_subscriptions: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          id: string
+          plano: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          plano: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          plano?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       calculate_age: { Args: { birth_date: string }; Returns: number }
+      get_vip_status: {
+        Args: { user_uuid: string }
+        Returns: {
+          data_fim: string
+          is_active: boolean
+          plano: string
+        }[]
+      }
+      is_vip_active: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

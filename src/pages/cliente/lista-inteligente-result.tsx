@@ -7,6 +7,7 @@ import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { compararPrecos, ResultadoComparacao, sugerirSimilares, SugestaoSimilar } from "@/services/comparadorService";
 import { toast } from "sonner";
+import { useVipStatus } from "@/hooks/useVipStatus";
 
 interface ListItem {
   id: string;
@@ -22,8 +23,7 @@ const ListaInteligenteResultPage = () => {
   const [sugestoes, setSugestoes] = useState<SugestaoSimilar[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingSugestoes, setLoadingSugestoes] = useState(false);
-  // Mock VIP status - em produção viria do contexto de autenticação
-  const isVIP = false;
+  const { isActive: isVIP, loading: loadingVIP } = useVipStatus();
 
   useEffect(() => {
     if (items.length === 0) {
@@ -63,7 +63,7 @@ const ListaInteligenteResultPage = () => {
     }
 
     buscarComparacao();
-  }, [items, navigate, isVIP]);
+  }, [items, navigate, isVIP, loadingVIP]);
 
   if (items.length === 0) {
     return null;
