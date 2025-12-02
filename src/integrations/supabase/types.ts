@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      establishment_partners: {
+        Row: {
+          admin: boolean | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          admin?: boolean | null
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          admin?: boolean | null
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_partners_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_products: {
         Row: {
           establishment_id: string | null
