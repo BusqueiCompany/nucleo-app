@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { compararPrecos, ResultadoComparacao, sugerirSimilares, SugestaoSimilar } from "@/services/comparadorService";
 import { toast } from "sonner";
 import { useVipStatus } from "@/hooks/useVipStatus";
+import VIPPaywall from "@/components/VIPPaywall";
 
 interface ListItem {
   id: string;
@@ -24,6 +25,7 @@ const ListaInteligenteResultPage = () => {
   const [loading, setLoading] = useState(true);
   const [loadingSugestoes, setLoadingSugestoes] = useState(false);
   const { isActive: isVIP, loading: loadingVIP } = useVipStatus();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -270,9 +272,7 @@ const ListaInteligenteResultPage = () => {
                 suas compras!
               </p>
               <button
-                onClick={() =>
-                  alert("Em breve: Sistema de assinatura VIP!")
-                }
+                onClick={() => setShowPaywall(true)}
                 className="bg-gradient-to-r from-amber-400 to-amber-600 text-white rounded-xl px-6 py-3 font-semibold hover:shadow-lg transition-shadow"
               >
                 Assinar VIP
@@ -280,6 +280,13 @@ const ListaInteligenteResultPage = () => {
             </div>
           </div>
         )}
+
+        {/* VIP Paywall Modal */}
+        <VIPPaywall
+          isOpen={showPaywall}
+          onClose={() => setShowPaywall(false)}
+          feature="Sugestões de itens similares mais baratos"
+        />
 
         {/* Choose Market Button */}
         <button

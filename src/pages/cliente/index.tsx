@@ -1,4 +1,4 @@
-import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain } from "lucide-react";
+import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import GradientHeader from "@/components/ui/GradientHeader";
@@ -6,8 +6,12 @@ import SearchBar from "@/components/ui/SearchBar";
 import CategoryButton from "@/components/ui/CategoryButton";
 import BottomTabs from "@/components/ui/BottomTabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useVipStatus } from "@/hooks/useVipStatus";
 
 const ClientePage = () => {
+  const navigate = useNavigate();
+  const { isActive: isVIP } = useVipStatus();
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Bom dia";
@@ -35,8 +39,6 @@ const ClientePage = () => {
     { name: "Mercado Central", distance: "1.2km" },
   ];
 
-  const navigate = useNavigate();
-
   const tabs = [
     { icon: Home, label: "Início", path: "/cliente" },
     { icon: Package, label: "Pedidos", path: "/cliente/pedidos" },
@@ -51,6 +53,31 @@ const ClientePage = () => {
 
         <div className="space-y-6">
           <SearchBar placeholder="Buscar estabelecimentos, produtos..." />
+
+          {/* VIP Banner */}
+          {!isVIP && (
+            <div
+              onClick={() => navigate("/cliente/vip")}
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 rounded-[1.5rem] p-6 shadow-lg hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
+            >
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-2">
+                  <Crown className="h-7 w-7 text-white" />
+                  <h3 className="text-xl font-bold text-white">
+                    Seja VIP e economize!
+                  </h3>
+                </div>
+                <p className="text-white/90 text-sm mb-3">
+                  Compare preços automaticamente e encontre as melhores ofertas
+                </p>
+                <div className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-4 py-2 rounded-full">
+                  A partir de R$ 19,90/mês
+                </div>
+              </div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
+              <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mb-12" />
+            </div>
+          )}
 
           {/* Categorias */}
           <div>
@@ -127,7 +154,10 @@ const ClientePage = () => {
           </div>
 
           {/* Criar Lista Inteligente */}
-          <button className="w-full bg-gradient-to-r from-gradient-start to-gradient-end text-white rounded-[1.5rem] p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2 font-semibold">
+          <button
+            onClick={() => navigate("/cliente/lista-inteligente")}
+            className="w-full bg-gradient-to-r from-gradient-start to-gradient-end text-white rounded-[1.5rem] p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2 font-semibold"
+          >
             <Brain className="h-5 w-5" />
             <span>Criar Lista Inteligente</span>
           </button>
