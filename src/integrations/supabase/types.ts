@@ -297,6 +297,41 @@ export type Database = {
         }
         Relationships: []
       }
+      priority_routes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          establishment_id: string | null
+          id: string
+          mensagem: string
+          produto: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          mensagem: string
+          produto: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          mensagem?: string
+          produto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "priority_routes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           categoria: string | null
