@@ -297,6 +297,45 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          preco_unit: number
+          product_id: string
+          quantidade: number
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          preco_unit: number
+          product_id: string
+          quantidade: number
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          preco_unit?: number
+          product_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string | null
