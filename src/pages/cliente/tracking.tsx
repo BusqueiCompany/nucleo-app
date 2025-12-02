@@ -1,23 +1,58 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import BottomTabs from "@/components/ui/BottomTabs";
-import { ArrowLeft, Phone, Bike, MapPin, Radio } from "lucide-react";
+import { ArrowLeft, Phone, Bike, MapPin, Radio, Package } from "lucide-react";
 import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
-import { buscarPedidoPorId, OrderWithItems } from "@/services/orderService";
+import { useEffect, useState, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listenToOrder } from "@/services/realtimeService";
 import { toast } from "sonner";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { getTrackingData, subscribeTracking, TrackingData } from "@/services/trackingMapService";
+import storeIcon from "@/assets/map-icons/store.png";
+import homeIcon from "@/assets/map-icons/home.png";
+import driverIcon from "@/assets/map-icons/driver.png";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+
+// Criar ícones customizados
+const createCustomIcon = (iconUrl: string, size: [number, number] = [40, 40]) => {
+  return L.icon({
+    iconUrl,
+    iconSize: size,
+    iconAnchor: [size[0] / 2, size[1]],
+    popupAnchor: [0, -size[1]],
+  });
+};
+
+const storeMarkerIcon = createCustomIcon(storeIcon);
+const homeMarkerIcon = createCustomIcon(homeIcon);
+const driverMarkerIcon = createCustomIcon(driverIcon);
 
 const TrackingPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("id");
-  const [pedido, setPedido] = useState<OrderWithItems | null>(null);
+  const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(false);
   const [highlight, setHighlight] = useState(false);
+  const [showDeliveredModal, setShowDeliveredModal] = useState(false);
+  const mapRef = useRef<L.Map | null>(null);
+
+  // Coordenadas mock (vão ser substituídas por dados reais)
+  const [establishmentCoords] = useState<[number, number]>([-23.5505, -46.6333]);
+  const [clientCoords] = useState<[number, number]>([-23.5605, -46.6433]);
+  const [driverCoords, setDriverCoords] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     if (!orderId) {
@@ -25,31 +60,54 @@ const TrackingPage = () => {
       return;
     }
 
-    carregarPedido();
+    loadTrackingData();
 
     // Configurar listener realtime
-    const unsubscribe = listenToOrder(orderId, (payload) => {
-      if (payload.eventType === "UPDATE") {
-        setIsLive(true);
-        setHighlight(true);
+    const unsubscribe = subscribeTracking(orderId, (data) => {
+      setIsLive(true);
+      setHighlight(true);
+
+      if (data.type === "order") {
+        const newStatus = data.payload.new.status;
         
-        // Atualizar pedido com novo status
-        setPedido((prev) => {
+        setTrackingData((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            status: payload.new.status,
-            updated_at: payload.new.updated_at,
+            order: {
+              ...prev.order,
+              status: newStatus,
+              updated_at: data.payload.new.updated_at,
+            },
           };
         });
 
-        // Mostrar toast com mudança de status
-        toast.success(`Status atualizado: ${getStatusLabel(payload.new.status)}`);
-
-        // Remover highlight após animação
-        setTimeout(() => setHighlight(false), 2000);
-        setTimeout(() => setIsLive(false), 3000);
+        toast.success(`Status atualizado: ${getStatusLabel(newStatus)}`);
+        
+        // Verificar se foi entregue
+        if (newStatus === "entregue") {
+          setShowDeliveredModal(true);
+        }
       }
+
+      if (data.type === "delivery") {
+        setTrackingData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            delivery: data.payload.new,
+          };
+        });
+
+        // Simular atualização de posição do entregador
+        // Em produção, isso viria do payload
+        if (data.payload.new.status === "em_rota") {
+          setDriverCoords([-23.5555, -46.6383]);
+        }
+      }
+
+      setTimeout(() => setHighlight(false), 2000);
+      setTimeout(() => setIsLive(false), 3000);
     });
 
     return () => {
@@ -57,12 +115,18 @@ const TrackingPage = () => {
     };
   }, [orderId, navigate]);
 
-  const carregarPedido = async () => {
+  const loadTrackingData = async () => {
     if (!orderId) return;
 
     setLoading(true);
-    const data = await buscarPedidoPorId(orderId);
-    setPedido(data);
+    const data = await getTrackingData(orderId);
+    setTrackingData(data);
+    
+    // Se já tem entregador, mostrar no mapa
+    if (data?.delivery?.driver_id) {
+      setDriverCoords([-23.5555, -46.6383]); // Mock, em produção viria do banco
+    }
+    
     setLoading(false);
   };
 
@@ -111,10 +175,6 @@ const TrackingPage = () => {
     return labels[status] || status;
   };
 
-  const steps = pedido ? getSteps(pedido.status) : [];
-  const currentStep = steps.findIndex((s) => s.status === "active") + 1;
-  const progressValue = (currentStep / steps.length) * 100;
-
   if (loading) {
     return (
       <BusqueiLayout>
@@ -127,7 +187,7 @@ const TrackingPage = () => {
     );
   }
 
-  if (!pedido) {
+  if (!trackingData) {
     return (
       <BusqueiLayout>
         <div className="text-center py-12">
@@ -137,144 +197,236 @@ const TrackingPage = () => {
     );
   }
 
+  const { order, establishment, delivery, driver } = trackingData;
+  const steps = getSteps(order.status);
+  const currentStep = steps.findIndex((s) => s.status === "active") + 1;
+  const progressValue = (currentStep / steps.length) * 100;
+
+  // Calcular centro do mapa
+  const mapCenter: [number, number] = [
+    (establishmentCoords[0] + clientCoords[0]) / 2,
+    (establishmentCoords[1] + clientCoords[1]) / 2,
+  ];
+
+  // Linha da rota
+  const routeLine = driverCoords
+    ? [establishmentCoords, driverCoords, clientCoords]
+    : [establishmentCoords, clientCoords];
+
   return (
     <>
-      <BusqueiLayout>
-        {/* Live Indicator */}
-        {isLive && (
-          <div className="mb-4 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-xl p-3 flex items-center gap-2 animate-fade-in">
-            <Radio className="h-4 w-4 text-green-500 animate-pulse" />
-            <span className="text-sm font-medium text-green-600 dark:text-green-400">
-              Atualizado em tempo real
-            </span>
-          </div>
-        )}
+      <div className="relative min-h-screen bg-gradient-to-b from-gradient-start to-gradient-end pb-20">
+        {/* Mapa de tela cheia na parte superior */}
+        <div className="relative h-[50vh] w-full">
+          <MapContainer
+            center={mapCenter}
+            zoom={14}
+            className="h-full w-full z-0"
+            ref={mapRef}
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            
+            {/* Marcador do estabelecimento */}
+            <Marker position={establishmentCoords} icon={storeMarkerIcon}>
+              <Popup>
+                <div className="text-center">
+                  <p className="font-semibold">{establishment?.nome || "Estabelecimento"}</p>
+                  <p className="text-xs text-muted-foreground">Origem do pedido</p>
+                </div>
+              </Popup>
+            </Marker>
 
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+            {/* Marcador do cliente */}
+            <Marker position={clientCoords} icon={homeMarkerIcon}>
+              <Popup>
+                <div className="text-center">
+                  <p className="font-semibold">Seu endereço</p>
+                  <p className="text-xs text-muted-foreground">{order.endereco_entrega}</p>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* Marcador do entregador (se existir) */}
+            {driverCoords && (
+              <Marker position={driverCoords} icon={driverMarkerIcon}>
+                <Popup>
+                  <div className="text-center">
+                    <p className="font-semibold">{driver?.nome || "Entregador"}</p>
+                    <p className="text-xs text-muted-foreground">A caminho</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
+            {/* Linha da rota */}
+            <Polyline
+              positions={routeLine}
+              color="#14C57C"
+              weight={3}
+              opacity={0.7}
+              dashArray="10, 10"
+            />
+          </MapContainer>
+
+          {/* Live Indicator sobre o mapa */}
+          {isLive && (
+            <div className="absolute top-4 left-4 right-4 z-[1000] bg-white/95 backdrop-blur-md border border-green-500/30 rounded-xl p-3 flex items-center gap-2 shadow-lg animate-fade-in">
+              <Radio className="h-4 w-4 text-primary animate-pulse" />
+              <span className="text-sm font-medium text-primary">
+                Atualizado em tempo real
+              </span>
+            </div>
+          )}
+
+          {/* Botão voltar */}
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm flex items-center justify-center hover:shadow-md transition-shadow"
+            className="absolute top-4 left-4 z-[1000] w-10 h-10 rounded-full bg-white/95 backdrop-blur-md shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
           >
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Pedido #{pedido.id.slice(0, 8)}
+        </div>
+
+        {/* Card inferior com informações */}
+        <div className="relative bg-background rounded-t-[2rem] -mt-8 pt-6 px-4 pb-4 shadow-2xl">
+          {/* Header */}
+          <div className="mb-4">
+            <h1 className="text-xl font-bold text-foreground">
+              Pedido #{order.id.slice(0, 8)}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {pedido.establishments?.nome || "Estabelecimento"}
+              {establishment?.nome || "Estabelecimento"}
             </p>
           </div>
-        </div>
 
-        {/* Progress Steps */}
-        <div
-          className={`bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4 transition-all ${
-            highlight ? "ring-2 ring-primary ring-offset-2 animate-scale-in" : ""
-          }`}
-        >
-          <div className="mb-4">
-            <Progress value={progressValue} className="h-2 mb-6" />
-          </div>
-          <div className="flex justify-between">
-            {steps.map((step, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors ${
-                    step.status === "completed"
-                      ? "bg-gradient-to-r from-gradient-start to-gradient-end text-white"
-                      : step.status === "active"
-                      ? "bg-gradient-to-r from-gradient-start to-gradient-end text-white ring-4 ring-gradient-start/20"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {index + 1}
+          {/* Progress Steps */}
+          <div
+            className={`busquei-card mb-4 transition-all ${
+              highlight ? "ring-2 ring-primary ring-offset-2 animate-scale-in" : ""
+            }`}
+          >
+            <div className="mb-4">
+              <Progress value={progressValue} className="h-2 mb-6" />
+            </div>
+            <div className="flex justify-between">
+              {steps.map((step, index) => (
+                <div key={index} className="flex flex-col items-center flex-1">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors text-xs ${
+                      step.status === "completed"
+                        ? "busquei-gradient text-white"
+                        : step.status === "active"
+                        ? "busquei-gradient text-white ring-4 ring-primary/20"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+                  <p
+                    className={`text-[10px] text-center font-medium ${
+                      step.status === "pending"
+                        ? "text-muted-foreground"
+                        : "text-foreground"
+                    }`}
+                  >
+                    {step.label}
+                  </p>
                 </div>
-                <p
-                  className={`text-xs text-center font-medium ${
-                    step.status === "pending"
-                      ? "text-muted-foreground"
-                      : "text-foreground"
-                  }`}
-                >
-                  {step.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Delivery Person Card */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Seu Entregador
-          </h2>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-              CM
+              ))}
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Carlos Matos</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                <Bike className="h-4 w-4" />
-                <span>Moto</span>
-                <span className="ml-2">•</span>
-                <span className="ml-2">RST-4E22</span>
+          </div>
+
+          {/* Delivery Person Card */}
+          {driver ? (
+            <div className="busquei-card mb-4">
+              <h2 className="busquei-subtitle mb-3">Seu Entregador</h2>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full busquei-gradient flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                  {driver.nome.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground">{driver.nome}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <Bike className="h-4 w-4" />
+                    <span>{driver.veiculo}</span>
+                    {driver.placa && (
+                      <>
+                        <span>•</span>
+                        <span>{driver.placa}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Map Placeholder */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
-          <div className="bg-gradient-to-br from-gradient-start/10 to-gradient-end/10 rounded-[1rem] h-48 flex items-center justify-center">
-            <p className="text-muted-foreground font-medium">Mapa aqui</p>
-          </div>
-        </div>
-
-        {/* Delivery Estimate */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-2">
-              Previsão de entrega
-            </p>
-            <p className="text-2xl font-bold text-gradient-end">
-              Chega em 12–18 min
-            </p>
-          </div>
-        </div>
-
-        {/* Delivery Person Location */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center flex-shrink-0">
-              <Bike className="h-5 w-5 text-white" />
+          ) : (
+            <div className="busquei-card mb-4">
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Package className="h-5 w-5" />
+                <p className="text-sm">Aguardando entregador aceitar o pedido...</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-1">
-                Localização do entregador
-              </h3>
+          )}
+
+          {/* Delivery Estimate */}
+          <div className="busquei-card mb-4">
+            <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">
-                O entregador está em movimento
+                Previsão de entrega
               </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3" />
-                <span>-23.5505° S, -46.6333° W</span>
-              </div>
+              <p className="text-2xl font-bold text-primary">
+                {establishment?.tempo_entrega_min
+                  ? `${establishment.tempo_entrega_min}–${establishment.tempo_entrega_min + 8} min`
+                  : "12–18 min"}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Call Button */}
-        <button
-          onClick={() => alert("Ligando para o entregador...")}
-          className="w-full bg-gradient-to-r from-gradient-start to-gradient-end text-white rounded-[1.5rem] py-4 shadow-lg hover:shadow-xl transition-shadow font-semibold flex items-center justify-center gap-2 mb-4"
-        >
-          <Phone className="h-5 w-5" />
-          Ligar para o entregador
-        </button>
-      </BusqueiLayout>
+          {/* Delivery Person Location */}
+          {driverCoords && (
+            <div className="busquei-card mb-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full busquei-gradient flex items-center justify-center flex-shrink-0">
+                  <Bike className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Localização do entregador
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    O entregador está em movimento
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span>{driverCoords[0].toFixed(4)}° S, {Math.abs(driverCoords[1]).toFixed(4)}° W</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Call Button */}
+          {driver && (
+            <button
+              onClick={() => {
+                if (driver.telefone) {
+                  window.location.href = `tel:${driver.telefone}`;
+                } else {
+                  toast.info("Telefone do entregador não disponível");
+                }
+              }}
+              className="busquei-button w-full mb-4"
+            >
+              <Phone className="h-5 w-5" />
+              Ligar para o entregador
+            </button>
+          )}
+        </div>
+      </div>
 
       <BottomTabs
         items={[
@@ -284,6 +436,38 @@ const TrackingPage = () => {
           { icon: User, label: "Perfil", path: "/cliente/perfil" },
         ]}
       />
+
+      {/* Modal de pedido entregue */}
+      <AlertDialog open={showDeliveredModal} onOpenChange={setShowDeliveredModal}>
+        <AlertDialogContent className="max-w-sm rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-2xl">
+              🎉 Pedido Entregue!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Seu pedido foi entregue com sucesso. Aproveite!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              onClick={() => {
+                setShowDeliveredModal(false);
+                navigate("/cliente");
+              }}
+              className="busquei-gradient w-full"
+            >
+              Voltar ao início
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeliveredModal(false)}
+              className="w-full"
+            >
+              Fechar
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
