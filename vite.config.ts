@@ -13,7 +13,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "leaflet": "leaflet/dist/leaflet.js",
     },
   },
   optimizeDeps: {
