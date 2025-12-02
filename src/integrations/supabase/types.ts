@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      establishment_products: {
+        Row: {
+          establishment_id: string | null
+          id: string
+          preco: number
+          product_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          establishment_id?: string | null
+          id?: string
+          preco: number
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          establishment_id?: string | null
+          id?: string
+          preco?: number
+          product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_products_market_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           created_at: string | null
@@ -55,45 +94,6 @@ export type Database = {
           tipo?: string
         }
         Relationships: []
-      }
-      market_products: {
-        Row: {
-          id: string
-          market_id: string | null
-          preco: number
-          product_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          market_id?: string | null
-          preco: number
-          product_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          market_id?: string | null
-          preco?: number
-          product_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "market_products_market_id_fkey"
-            columns: ["market_id"]
-            isOneToOne: false
-            referencedRelation: "markets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "market_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       markets: {
         Row: {
