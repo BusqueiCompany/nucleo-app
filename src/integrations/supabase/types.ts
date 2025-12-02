@@ -104,6 +104,51 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          descricao: string
+          id: string
+          imagem_url: string | null
+          prioridade: string | null
+          respondido_por: string | null
+          resposta: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          descricao: string
+          id?: string
+          imagem_url?: string | null
+          prioridade?: string | null
+          respondido_por?: string | null
+          resposta?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          imagem_url?: string | null
+          prioridade?: string | null
+          respondido_por?: string | null
+          resposta?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_details: {
         Row: {
           aceita_campanhas: boolean
@@ -194,6 +239,15 @@ export type Database = {
     }
     Functions: {
       calculate_age: { Args: { birth_date: string }; Returns: number }
+      get_user_ticket_stats: {
+        Args: { user_uuid: string }
+        Returns: {
+          abertos: number
+          em_andamento: number
+          resolvidos: number
+          total_tickets: number
+        }[]
+      }
       get_vip_status: {
         Args: { user_uuid: string }
         Returns: {
