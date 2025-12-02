@@ -113,6 +113,7 @@ export type Database = {
           created_at: string
           data_nascimento: string
           email: string
+          foto_url: string | null
           id: string
           idade_calculada: number | null
           nome: string
@@ -129,6 +130,7 @@ export type Database = {
           created_at?: string
           data_nascimento: string
           email: string
+          foto_url?: string | null
           id?: string
           idade_calculada?: number | null
           nome: string
@@ -145,6 +147,7 @@ export type Database = {
           created_at?: string
           data_nascimento?: string
           email?: string
+          foto_url?: string | null
           id?: string
           idade_calculada?: number | null
           nome?: string

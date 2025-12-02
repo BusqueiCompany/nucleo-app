@@ -12,6 +12,7 @@ import TrackingPage from "./pages/cliente/tracking";
 import ListaInteligentePage from "./pages/cliente/lista-inteligente";
 import ListaInteligenteResultPage from "./pages/cliente/lista-inteligente-result";
 import VIPPage from "./pages/cliente/vip";
+import PerfilPage from "./pages/cliente/perfil";
 import EntregadorPage from "./pages/entregador";
 import ParceiroPage from "./pages/parceiro";
 import SuportePage from "./pages/suporte";
@@ -95,6 +96,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <VIPPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cliente/perfil"
+        element={
+          <ProtectedRoute>
+            <PerfilPage />
           </ProtectedRoute>
         }
       />
