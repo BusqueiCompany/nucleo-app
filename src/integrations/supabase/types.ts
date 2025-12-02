@@ -297,6 +297,50 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          created_at: string | null
+          endereco_entrega: string
+          establishment_id: string
+          id: string
+          metodo_pagamento: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+          valor_total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          endereco_entrega: string
+          establishment_id: string
+          id?: string
+          metodo_pagamento?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          valor_total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          endereco_entrega?: string
+          establishment_id?: string
+          id?: string
+          metodo_pagamento?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       priority_routes: {
         Row: {
           ativo: boolean | null
