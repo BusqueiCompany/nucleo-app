@@ -51,6 +51,9 @@ export default {
           DEFAULT: "hsl(var(--vip))",
           foreground: "hsl(var(--vip-foreground))",
         },
+        "primary-dark": "hsl(var(--primary-dark))",
+        charcoal: "hsl(var(--charcoal))",
+        "premium-white": "hsl(var(--premium-white))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -68,6 +71,8 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "1rem",
+        "2xl": "1.5rem",
       },
       keyframes: {
         "accordion-down": {

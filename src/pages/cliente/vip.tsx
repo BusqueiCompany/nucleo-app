@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import BottomTabs from "@/components/ui/BottomTabs";
 import { ArrowLeft, Crown, Check, Sparkles, TrendingDown, Bell, List } from "lucide-react";
 import { Home, ShoppingCart, User, ClipboardList } from "lucide-react";
@@ -48,7 +47,6 @@ const VIPPage = () => {
       
       if (result.success) {
         toast.success("Assinatura VIP ativada com sucesso! 🎉");
-        // Reload to update VIP status
         window.location.reload();
       } else {
         toast.error(result.error || "Erro ao processar assinatura");
@@ -63,142 +61,141 @@ const VIPPage = () => {
 
   return (
     <>
-      <BusqueiLayout>
+      <div className="min-h-screen busquei-gradient pb-20">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm flex items-center justify-center hover:shadow-md transition-shadow"
-          >
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </button>
-          <div className="flex items-center gap-2 flex-1">
-            <Crown className="h-7 w-7 text-amber-500" />
-            <h1 className="text-2xl font-bold text-foreground">
-              Clube Busquei VIP
-            </h1>
+        <div className="container mx-auto px-6 pt-6">
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-all"
+            >
+              <ArrowLeft className="h-5 w-5 text-white" />
+            </button>
+            <div className="flex items-center gap-2 flex-1">
+              <Crown className="h-7 w-7 text-vip" />
+              <h1 className="text-2xl font-bold text-white">
+                Clube Busquei VIP
+              </h1>
+            </div>
           </div>
         </div>
 
-        {/* Current Status */}
-        {isVIPActive && (
-          <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-[1.5rem] p-6 shadow-md mb-6 border-2 border-green-300">
-            <div className="flex items-center gap-3">
-              <Crown className="h-8 w-8 text-green-600" />
-              <div>
-                <h3 className="font-bold text-green-800">Você é VIP!</h3>
-                <p className="text-sm text-green-700">
-                  Plano: {PLANOS[planoAtual as PlanosVIP]?.nome || "Ativo"}
-                </p>
+        <div className="container mx-auto px-6 space-y-6">
+          {/* Current Status */}
+          {isVIPActive && (
+            <div className="busquei-vip-gradient rounded-2xl p-6 shadow-lg border-2 border-vip/30">
+              <div className="flex items-center gap-3">
+                <Crown className="h-8 w-8 text-vip-foreground" />
+                <div>
+                  <h3 className="font-bold text-vip-foreground">Você é VIP!</h3>
+                  <p className="text-sm text-vip-foreground/80">
+                    Plano: {PLANOS[planoAtual as PlanosVIP]?.nome || "Ativo"}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Benefits Section */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 shadow-md mb-6">
-          <h2 className="text-xl font-bold text-foreground mb-4">
-            Benefícios Exclusivos
-          </h2>
-          <div className="space-y-3">
-            {beneficios.map((beneficio, index) => {
-              const Icon = beneficio.icon;
-              return (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center flex-shrink-0">
-                    <Icon className="h-4 w-4 text-white" />
+          {/* Benefits Section */}
+          <div className="busquei-card p-6">
+            <h2 className="busquei-title mb-4">Benefícios VIP</h2>
+            <div className="space-y-3">
+              {beneficios.map((beneficio, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <beneficio.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-foreground pt-1">{beneficio.texto}</p>
+                  <p className="text-sm text-foreground font-medium pt-2">{beneficio.texto}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Plans */}
+          <h2 className="text-xl font-bold text-white mb-4">
+            Escolha seu Plano
+          </h2>
+          <div className="space-y-4 mb-6">
+            {Object.entries(PLANOS).map(([key, plano]) => {
+              const isPopular = key === "trimestral";
+              const isCurrent = planoAtual === key;
+
+              return (
+                <Card
+                  key={key}
+                  className={`busquei-card transition-all ${
+                    isPopular
+                      ? "border-2 border-vip shadow-xl"
+                      : "border-transparent shadow-lg"
+                  }`}
+                >
+                  <CardContent className="p-6">
+                    {isPopular && (
+                      <div className="busquei-vip-gradient text-vip-foreground text-xs font-bold px-3 py-1 rounded-full inline-block mb-3">
+                        MAIS POPULAR
+                      </div>
+                    )}
+                    {isCurrent && (
+                      <div className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full inline-block mb-3">
+                        PLANO ATUAL
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-foreground">
+                          {plano.nome}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Economize até {plano.economia}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold text-primary">
+                          R$ {plano.preco.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          por {plano.dias} dias
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleAssinar(key as PlanosVIP)}
+                      disabled={loading || isCurrent}
+                      className={`w-full rounded-xl py-3 font-semibold transition-all flex items-center justify-center gap-2 ${
+                        isPopular
+                          ? "busquei-vip-gradient text-vip-foreground hover:shadow-lg"
+                          : "busquei-button"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {loading ? (
+                        <>Processando...</>
+                      ) : isCurrent ? (
+                        <>
+                          <Check className="h-5 w-5" />
+                          Plano Ativo
+                        </>
+                      ) : (
+                        <>
+                          <Crown className="h-5 w-5" />
+                          Assinar Agora
+                        </>
+                      )}
+                    </button>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
+
+          {/* Guarantee */}
+          <div className="busquei-card p-6 text-center bg-secondary/10">
+            <p className="text-sm text-foreground font-medium">
+              🛡️ Garantia de 7 dias - Cancele quando quiser
+            </p>
+          </div>
         </div>
-
-        {/* Plans */}
-        <h2 className="text-xl font-bold text-foreground mb-4">
-          Escolha seu Plano
-        </h2>
-        <div className="space-y-4 mb-6">
-          {Object.entries(PLANOS).map(([key, plano]) => {
-            const isPopular = key === "trimestral";
-            const isCurrent = planoAtual === key;
-
-            return (
-              <Card
-                key={key}
-                className={`bg-white/80 backdrop-blur-md transition-all ${
-                  isPopular
-                    ? "border-2 border-amber-400 shadow-lg shadow-amber-500/20"
-                    : "border-transparent shadow-md"
-                }`}
-              >
-                <CardContent className="p-6">
-                  {isPopular && (
-                    <div className="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-3">
-                      MAIS POPULAR
-                    </div>
-                  )}
-                  {isCurrent && (
-                    <div className="bg-gradient-to-r from-green-400 to-green-500 text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-3">
-                      PLANO ATUAL
-                    </div>
-                  )}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground">
-                        {plano.nome}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Economize até {plano.economia}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-gradient-end">
-                        R$ {plano.preco.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        por {plano.dias} dias
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleAssinar(key as PlanosVIP)}
-                    disabled={loading || isCurrent}
-                    className={`w-full rounded-xl py-3 font-semibold transition-all flex items-center justify-center gap-2 ${
-                      isPopular
-                        ? "bg-gradient-to-r from-amber-400 to-amber-600 text-white hover:shadow-lg"
-                        : "bg-gradient-to-r from-gradient-start to-gradient-end text-white hover:shadow-lg"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {loading ? (
-                      <>Processando...</>
-                    ) : isCurrent ? (
-                      <>
-                        <Check className="h-5 w-5" />
-                        Plano Ativo
-                      </>
-                    ) : (
-                      <>
-                        <Crown className="h-5 w-5" />
-                        Assinar Agora
-                      </>
-                    )}
-                  </button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Guarantee */}
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-[1.5rem] p-6 shadow-md mb-4 text-center">
-          <p className="text-sm text-blue-800 font-medium">
-            🛡️ Garantia de 7 dias - Cancele quando quiser
-          </p>
-        </div>
-      </BusqueiLayout>
+      </div>
 
       <BottomTabs
         items={[
