@@ -15,13 +15,4 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  optimizeDeps: {
-    exclude: ['leaflet'],
-    include: ['react', 'react-dom'],
-  },
-  build: {
-    commonjsOptions: {
-      include: [/leaflet/, /node_modules/],
-    },
-  },
 }));
