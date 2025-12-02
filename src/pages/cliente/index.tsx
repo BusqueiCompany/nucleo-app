@@ -1,4 +1,4 @@
-import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain, Crown, AlertTriangle, ChevronRight } from "lucide-react";
+import { Home, Package, ShoppingBag, User, Store, Wine, Pill, PawPrint, Droplets, Flame, Brain, Crown, AlertTriangle, ChevronRight, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BusqueiLayout from "@/components/layout/BusqueiLayout";
 import GradientHeader from "@/components/ui/GradientHeader";
@@ -10,15 +10,55 @@ import { useVipStatus } from "@/hooks/useVipStatus";
 import { useEffect, useState } from "react";
 import { listarAtivas, PriorityRoute } from "@/services/priorityRoutesService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { listenPriorityRoutes } from "@/services/realtimeService";
+import { toast } from "sonner";
 
 const ClientePage = () => {
   const navigate = useNavigate();
   const { isActive: isVIP } = useVipStatus();
   const [rotasPrioritarias, setRotasPrioritarias] = useState<PriorityRoute[]>([]);
   const [loadingRotas, setLoadingRotas] = useState(true);
+  const [highlightedRoutes, setHighlightedRoutes] = useState<Set<string>>(new Set());
+  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     carregarRotas();
+
+    // Configurar listener realtime para rotas prioritárias
+    const unsubscribe = listenPriorityRoutes((payload) => {
+      if (payload.eventType === "INSERT" && payload.new?.ativo) {
+        // Nova rota ativa
+        setIsLive(true);
+        toast.success("Nova oferta especial disponível!", {
+          description: payload.new.produto,
+        });
+
+        carregarRotas();
+
+        // Highlight na nova rota
+        setHighlightedRoutes((prev) => new Set(prev).add(payload.new.id));
+        setTimeout(() => {
+          setHighlightedRoutes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(payload.new.id);
+            return newSet;
+          });
+        }, 3000);
+
+        setTimeout(() => setIsLive(false), 3000);
+      } else if (payload.eventType === "UPDATE") {
+        // Rota atualizada (ativada/desativada)
+        if (payload.new?.ativo && !payload.old?.ativo) {
+          // Rota foi ativada
+          toast.success("Nova oferta ativada!");
+        }
+        carregarRotas();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const carregarRotas = async () => {
@@ -73,10 +113,18 @@ const ClientePage = () => {
           {/* Rotas Prioritárias */}
           {!loadingRotas && rotasPrioritarias.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-primary" />
-                Ofertas Especiais
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-primary" />
+                  Ofertas Especiais
+                </h2>
+                {isLive && (
+                  <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-full px-3 py-1 animate-fade-in">
+                    <Radio className="h-3 w-3 animate-pulse" />
+                    <span>Ao vivo</span>
+                  </div>
+                )}
+              </div>
               <ScrollArea className="w-full whitespace-nowrap">
                 <div className="flex gap-4 pb-2">
                   {rotasPrioritarias.map((rota) => (
@@ -86,7 +134,11 @@ const ClientePage = () => {
                         // TODO: implementar navegação para produto
                         navigate("/cliente/mercado");
                       }}
-                      className="relative bg-gradient-to-br from-amber-400/20 via-orange-400/20 to-red-400/20 backdrop-blur-md rounded-[1.5rem] p-5 shadow-lg hover:shadow-xl transition-all cursor-pointer min-w-[280px] border-2 border-amber-400/30"
+                      className={`relative bg-gradient-to-br from-amber-400/20 via-orange-400/20 to-red-400/20 backdrop-blur-md rounded-[1.5rem] p-5 shadow-lg hover:shadow-xl transition-all cursor-pointer min-w-[280px] border-2 border-amber-400/30 ${
+                        highlightedRoutes.has(rota.id)
+                          ? "ring-2 ring-primary ring-offset-2 animate-scale-in"
+                          : ""
+                      }`}
                     >
                       <div className="absolute top-3 right-3">
                         <AlertTriangle className="h-6 w-6 text-amber-600" />

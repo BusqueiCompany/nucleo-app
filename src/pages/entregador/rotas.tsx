@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Navigation, Package } from "lucide-react";
+import { MapPin, Navigation, Package, Radio } from "lucide-react";
 import { toast } from "sonner";
 import {
   getDriver,
@@ -21,6 +21,7 @@ import {
   vincularEntregador,
   OrderWithItems,
 } from "@/services/orderService";
+import { listenOrders } from "@/services/realtimeService";
 
 const EntregadorRotasPage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ const EntregadorRotasPage = () => {
   );
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
+  const [highlightedOrders, setHighlightedOrders] = useState<Set<string>>(new Set());
+  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     if (roleLoading) return;
@@ -44,6 +47,40 @@ const EntregadorRotasPage = () => {
     if (user) {
       inicializar();
     }
+
+    // Configurar listener realtime para pedidos aguardando entregador
+    const unsubscribe = listenOrders((payload) => {
+      if (
+        payload.eventType === "UPDATE" &&
+        payload.new?.status === "aguardando-entregador"
+      ) {
+        setIsLive(true);
+        toast.success("Novo pedido disponível!", {
+          description: "Um pedido está aguardando entregador",
+        });
+
+        // Recarregar pedidos disponíveis
+        listarPedidosAguardandoEntregador().then((pedidos) => {
+          setPedidosDisponiveis(pedidos);
+        });
+
+        // Highlight no novo pedido
+        setHighlightedOrders((prev) => new Set(prev).add(payload.new.id));
+        setTimeout(() => {
+          setHighlightedOrders((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(payload.new.id);
+            return newSet;
+          });
+        }, 3000);
+
+        setTimeout(() => setIsLive(false), 3000);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [roleLoading, isEntregadorUser, user, navigate]);
 
   const inicializar = async () => {
@@ -163,6 +200,16 @@ const EntregadorRotasPage = () => {
     <BusqueiLayout>
       <GradientHeader>Rotas e Entregas</GradientHeader>
 
+      {/* Live Indicator */}
+      {isLive && (
+        <div className="mb-4 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-xl p-3 flex items-center gap-2 animate-fade-in">
+          <Radio className="h-4 w-4 text-green-500 animate-pulse" />
+          <span className="text-sm font-medium text-green-600 dark:text-green-400">
+            Novos pedidos disponíveis
+          </span>
+        </div>
+      )}
+
       {/* Mapa Placeholder */}
       <Card className="p-6 mb-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg">
         <div className="flex items-center justify-center h-64 bg-muted/30 rounded-lg">
@@ -183,7 +230,11 @@ const EntregadorRotasPage = () => {
           {pedidosDisponiveis.map((pedido) => (
             <Card
               key={pedido.id}
-              className="p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg"
+              className={`p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg transition-all ${
+                highlightedOrders.has(pedido.id)
+                  ? "ring-2 ring-primary ring-offset-2 animate-scale-in"
+                  : ""
+              }`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
