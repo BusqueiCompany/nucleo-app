@@ -204,6 +204,36 @@ export type Database = {
         }
         Relationships: []
       }
+      global_notifications: {
+        Row: {
+          created_at: string | null
+          enviado_por: string | null
+          id: string
+          imagem_url: string | null
+          mensagem: string
+          tipo: string | null
+          titulo: string
+        }
+        Insert: {
+          created_at?: string | null
+          enviado_por?: string | null
+          id?: string
+          imagem_url?: string | null
+          mensagem: string
+          tipo?: string | null
+          titulo: string
+        }
+        Update: {
+          created_at?: string | null
+          enviado_por?: string | null
+          id?: string
+          imagem_url?: string | null
+          mensagem?: string
+          tipo?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
       markets: {
         Row: {
           created_at: string | null
