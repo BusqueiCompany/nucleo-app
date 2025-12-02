@@ -28,6 +28,7 @@ import SuporteTicketDetalhePage from "./pages/suporte/ticket-detalhe";
 import AdmDashboardPage from "./pages/adm/dashboard";
 import AdmEstabelecimentosPage from "./pages/adm/estabelecimentos";
 import AdmNotificacoesPage from "./pages/adm/notificacoes";
+import AdmRotasPrioritariasPage from "./pages/adm/rotas-prioritarias";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -243,6 +244,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <AdmNotificacoesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/adm/rotas-prioritarias"
+        element={
+          <ProtectedRoute>
+            <AdmRotasPrioritariasPage />
           </ProtectedRoute>
         }
       />
