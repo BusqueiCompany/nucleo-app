@@ -1,19 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEntregadorRole } from "@/hooks/useEntregadorRole";
 import { useAuth } from "@/contexts/AuthContext";
-import BusqueiLayout from "@/components/layout/BusqueiLayout";
-import GradientHeader from "@/components/ui/GradientHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Navigation, Package, Radio } from "lucide-react";
+import { MapPin, Phone, Clock, Package, CheckCircle, Truck, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import {
   getDriver,
   listarEntregas,
-  atualizarStatusEntrega,
   Delivery,
 } from "@/services/entregadorService";
 import {
@@ -22,19 +19,46 @@ import {
   OrderWithItems,
 } from "@/services/orderService";
 import { listenOrders } from "@/services/realtimeService";
+import {
+  getActiveDelivery,
+  updateDeliveryStatus,
+  subscribeDelivery,
+  unsubscribeAll,
+  getStatusLabel,
+  getNextStatus,
+  DeliveryTrackingData,
+} from "@/services/deliveryTrackingService";
+import MapRadar from "@/components/map/MapRadar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const EntregadorRotasPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isEntregadorUser, loading: roleLoading } = useEntregadorRole();
   const [entregas, setEntregas] = useState<Delivery[]>([]);
-  const [pedidosDisponiveis, setPedidosDisponiveis] = useState<OrderWithItems[]>(
-    []
-  );
+  const [pedidosDisponiveis, setPedidosDisponiveis] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverId, setDriverId] = useState<string | null>(null);
-  const [highlightedOrders, setHighlightedOrders] = useState<Set<string>>(new Set());
-  const [isLive, setIsLive] = useState(false);
+  const [activeDelivery, setActiveDelivery] = useState<DeliveryTrackingData | null>(null);
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showDeliveredModal, setShowDeliveredModal] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+
+  // Stores para o MapRadar
+  const [mapStores, setMapStores] = useState<Array<{
+    id: string;
+    nome: string;
+    endereco: string;
+    latitude: number;
+    longitude: number;
+    categoria?: string;
+  }>>([]);
 
   useEffect(() => {
     if (roleLoading) return;
@@ -48,40 +72,37 @@ const EntregadorRotasPage = () => {
       inicializar();
     }
 
-    // Configurar listener realtime para pedidos aguardando entregador
+    // Listener realtime para pedidos
     const unsubscribe = listenOrders((payload) => {
       if (
         payload.eventType === "UPDATE" &&
         payload.new?.status === "aguardando-entregador"
       ) {
-        setIsLive(true);
-        toast.success("Novo pedido disponível!", {
-          description: "Um pedido está aguardando entregador",
-        });
-
-        // Recarregar pedidos disponíveis
-        listarPedidosAguardandoEntregador().then((pedidos) => {
-          setPedidosDisponiveis(pedidos);
-        });
-
-        // Highlight no novo pedido
-        setHighlightedOrders((prev) => new Set(prev).add(payload.new.id));
-        setTimeout(() => {
-          setHighlightedOrders((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(payload.new.id);
-            return newSet;
-          });
-        }, 3000);
-
-        setTimeout(() => setIsLive(false), 3000);
+        toast.success("Novo pedido disponível!");
+        listarPedidosAguardandoEntregador().then(setPedidosDisponiveis);
       }
     });
 
     return () => {
       unsubscribe();
+      unsubscribeAll();
+      stopLocationTracking();
     };
   }, [roleLoading, isEntregadorUser, user, navigate]);
+
+  // Subscribe to delivery updates
+  useEffect(() => {
+    if (!driverId) return;
+
+    const unsubscribe = subscribeDelivery(driverId, async () => {
+      // Recarregar dados quando houver update
+      const delivery = await getActiveDelivery(driverId);
+      setActiveDelivery(delivery);
+      updateMapStores(delivery);
+    });
+
+    return unsubscribe;
+  }, [driverId]);
 
   const inicializar = async () => {
     if (!user) return;
@@ -97,15 +118,82 @@ const EntregadorRotasPage = () => {
 
     setDriverId(driver.id);
 
-    // Carregar entregas do driver
-    const entregasData = await listarEntregas(driver.id);
+    // Carregar entrega ativa
+    const delivery = await getActiveDelivery(driver.id);
+    setActiveDelivery(delivery);
+    updateMapStores(delivery);
+
+    // Iniciar tracking de localização se houver entrega ativa
+    if (delivery) {
+      startLocationTracking();
+    }
+
+    // Carregar entregas e pedidos disponíveis
+    const [entregasData, pedidosData] = await Promise.all([
+      listarEntregas(driver.id),
+      listarPedidosAguardandoEntregador(),
+    ]);
+
     setEntregas(entregasData);
-
-    // Carregar pedidos disponíveis
-    const pedidosData = await listarPedidosAguardandoEntregador();
     setPedidosDisponiveis(pedidosData);
-
     setLoading(false);
+  };
+
+  const updateMapStores = (delivery: DeliveryTrackingData | null) => {
+    if (!delivery) {
+      setMapStores([]);
+      return;
+    }
+
+    const stores = [
+      {
+        id: "establishment",
+        nome: delivery.establishment.nome,
+        endereco: "Estabelecimento",
+        latitude: delivery.establishment.latitude,
+        longitude: delivery.establishment.longitude,
+        categoria: "Retirada"
+      },
+      {
+        id: "customer",
+        nome: delivery.customer.nome,
+        endereco: delivery.order.endereco_entrega,
+        latitude: delivery.customer.latitude,
+        longitude: delivery.customer.longitude,
+        categoria: "Entrega"
+      }
+    ];
+
+    setMapStores(stores);
+  };
+
+  const startLocationTracking = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não suportada");
+      return;
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setDriverLocation({ lat: latitude, lng: longitude });
+      },
+      (error) => {
+        console.error("Erro de geolocalização:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+      }
+    );
+  };
+
+  const stopLocationTracking = () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
   };
 
   const handleAceitarPedido = async (orderId: string) => {
@@ -124,237 +212,265 @@ const EntregadorRotasPage = () => {
     }
   };
 
-  const handleAtualizarStatus = async (deliveryId: string, novoStatus: string) => {
-    const resultado = await atualizarStatusEntrega(deliveryId, novoStatus);
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!activeDelivery) return;
+
+    const resultado = await updateDeliveryStatus(activeDelivery.delivery.id, newStatus);
 
     if (resultado.success) {
-      toast.success("Status atualizado!");
-      if (user) inicializar();
+      if (newStatus === "entregue") {
+        setShowDeliveredModal(true);
+        stopLocationTracking();
+        setActiveDelivery(null);
+        setMapStores([]);
+      } else {
+        toast.success(`Status atualizado: ${getStatusLabel(newStatus)}`);
+      }
+      inicializar();
     } else {
       toast.error(resultado.error || "Erro ao atualizar status");
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pendente":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "aceito":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "retirado":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-      case "a_caminho":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "entregue":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    const colors: Record<string, string> = {
+      pendente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      aceito: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      retirado: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      a_caminho: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+      entregue: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+    };
+    return colors[status] || "bg-muted text-muted-foreground";
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "pendente":
-        return "Pendente";
-      case "aceito":
-        return "Aceito";
-      case "retirado":
-        return "Retirado";
-      case "a_caminho":
-        return "A Caminho";
-      case "entregue":
-        return "Entregue";
-      default:
-        return status;
-    }
-  };
-
-  const getProximoStatus = (statusAtual: string): string | null => {
-    switch (statusAtual) {
-      case "pendente":
-        return "aceito";
-      case "aceito":
-        return "retirado";
-      case "retirado":
-        return "a_caminho";
-      case "a_caminho":
-        return "entregue";
-      default:
-        return null;
-    }
+  const estimatedTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 25);
+    return now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   };
 
   if (roleLoading || loading) {
     return (
-      <BusqueiLayout>
-        <div className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      </BusqueiLayout>
+      <div className="min-h-screen bg-background p-4 space-y-4">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-[50vh] w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
     );
   }
 
   return (
-    <BusqueiLayout>
-      <GradientHeader>Rotas e Entregas</GradientHeader>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <div className="busquei-gradient px-4 py-4 text-white">
+        <h1 className="text-xl font-bold">Rotas e Entregas</h1>
+        <p className="text-sm opacity-90">
+          {activeDelivery ? "Entrega em andamento" : "Aguardando pedidos"}
+        </p>
+      </div>
 
-      {/* Live Indicator */}
-      {isLive && (
-        <div className="mb-4 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-xl p-3 flex items-center gap-2 animate-fade-in">
-          <Radio className="h-4 w-4 text-green-500 animate-pulse" />
-          <span className="text-sm font-medium text-green-600 dark:text-green-400">
-            Novos pedidos disponíveis
-          </span>
-        </div>
-      )}
-
-      {/* Mapa Placeholder */}
-      <Card className="p-6 mb-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg">
-        <div className="flex items-center justify-center h-64 bg-muted/30 rounded-lg">
-          <div className="text-center">
-            <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Mapa de entregas (em breve)</p>
+      {/* Map Section - 70% */}
+      <div className="flex-1 min-h-[50vh] relative">
+        {activeDelivery ? (
+          <div className="h-full p-4">
+            <MapRadar
+              stores={mapStores}
+              onStoreClick={() => {}}
+              onLocationChange={(coords) => setDriverLocation(coords)}
+            />
           </div>
-        </div>
-      </Card>
-
-      {/* Pedidos Disponíveis */}
-      {pedidosDisponiveis.length > 0 && (
-        <div className="space-y-4 mb-8">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Pedidos Disponíveis ({pedidosDisponiveis.length})
-          </h3>
-
-          {pedidosDisponiveis.map((pedido) => (
-            <Card
-              key={pedido.id}
-              className={`p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg transition-all ${
-                highlightedOrders.has(pedido.id)
-                  ? "ring-2 ring-primary ring-offset-2 animate-scale-in"
-                  : ""
-              }`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="font-semibold text-foreground mb-1">
-                    Pedido #{pedido.id.slice(0, 8)}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {pedido.establishments?.nome || "Estabelecimento"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {pedido.order_items?.length || 0} itens
-                  </p>
-                </div>
-                <Badge className="bg-orange-100 text-orange-800">
-                  Aguardando
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-primary">
-                    R$ {pedido.valor_total.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Taxa entrega: R$ 4,99
-                  </p>
-                </div>
-
-                <Button onClick={() => handleAceitarPedido(pedido.id)}>
-                  Aceitar Pedido
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Lista de Entregas */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Minhas Entregas ({entregas.length})
-        </h3>
-
-        {entregas.length === 0 ? (
-          <Card className="p-12 backdrop-blur-sm bg-card/80 border-border/50">
-            <div className="text-center">
-              <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+        ) : (
+          <div className="h-full flex items-center justify-center bg-muted/30">
+            <div className="text-center p-8">
+              <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                Nenhuma entrega no momento.
+                Aceite um pedido para ver a rota
               </p>
             </div>
-          </Card>
-        ) : (
-          entregas.map((entrega) => (
-            <Card
-              key={entrega.id}
-              className="p-6 backdrop-blur-sm bg-card/80 border-border/50 shadow-lg"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Navigation className="w-6 h-6 text-primary" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">
-                      Pedido #{entrega.order_id?.slice(0, 8) || "---"}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {entrega.distancia_metros
-                        ? `${(entrega.distancia_metros / 1000).toFixed(1)} km`
-                        : "Distância não informada"}
-                    </p>
-                  </div>
-                </div>
-
-                <Badge className={getStatusColor(entrega.status)}>
-                  {getStatusLabel(entrega.status)}
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-primary">
-                    R$ {entrega.valor?.toFixed(2) || "0.00"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(entrega.created_at).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-
-                {getProximoStatus(entrega.status) && (
-                  <Button
-                    onClick={() =>
-                      handleAtualizarStatus(
-                        entrega.id,
-                        getProximoStatus(entrega.status)!
-                      )
-                    }
-                  >
-                    {entrega.status === "pendente" && "Aceitar"}
-                    {entrega.status === "aceito" && "Marcar Retirado"}
-                    {entrega.status === "retirado" && "A Caminho"}
-                    {entrega.status === "a_caminho" && "Finalizar Entrega"}
-                  </Button>
-                )}
-
-                {entrega.status === "entregue" && (
-                  <Badge variant="outline" className="text-green-600">
-                    Concluída
-                  </Badge>
-                )}
-              </div>
-            </Card>
-          ))
+          </div>
         )}
       </div>
-    </BusqueiLayout>
+
+      {/* Bottom Card - 30% */}
+      <div className="bg-card/95 backdrop-blur-md border-t border-border shadow-lg rounded-t-3xl -mt-4 relative z-10">
+        {activeDelivery ? (
+          <div className="p-6 space-y-4">
+            {/* Status Badge */}
+            <div className="flex items-center justify-between">
+              <Badge className={getStatusColor(activeDelivery.delivery.status)}>
+                {getStatusLabel(activeDelivery.delivery.status)}
+              </Badge>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">Previsão: {estimatedTime()}</span>
+              </div>
+            </div>
+
+            {/* Customer Info */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Package className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {activeDelivery.customer.nome}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {activeDelivery.order.endereco_entrega}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Button */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                if (activeDelivery.customer.telefone) {
+                  window.open(`tel:${activeDelivery.customer.telefone}`);
+                } else {
+                  toast.info("Telefone não disponível");
+                }
+              }}
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              Falar com o Cliente
+            </Button>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant={activeDelivery.delivery.status === "aceito" ? "default" : "outline"}
+                size="sm"
+                disabled={activeDelivery.delivery.status !== "aceito"}
+                onClick={() => handleUpdateStatus("retirado")}
+                className="flex flex-col h-auto py-3"
+              >
+                <Package className="w-5 h-5 mb-1" />
+                <span className="text-xs">Retirei</span>
+              </Button>
+
+              <Button
+                variant={activeDelivery.delivery.status === "retirado" ? "default" : "outline"}
+                size="sm"
+                disabled={activeDelivery.delivery.status !== "retirado"}
+                onClick={() => handleUpdateStatus("a_caminho")}
+                className="flex flex-col h-auto py-3"
+              >
+                <Truck className="w-5 h-5 mb-1" />
+                <span className="text-xs">A Caminho</span>
+              </Button>
+
+              <Button
+                variant={activeDelivery.delivery.status === "a_caminho" ? "default" : "outline"}
+                size="sm"
+                disabled={activeDelivery.delivery.status !== "a_caminho"}
+                onClick={() => handleUpdateStatus("entregue")}
+                className="flex flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle className="w-5 h-5 mb-1" />
+                <span className="text-xs">Entregue</span>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6">
+            {/* Pedidos Disponíveis */}
+            {pedidosDisponiveis.length > 0 ? (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Pedidos Disponíveis ({pedidosDisponiveis.length})
+                </h3>
+
+                {pedidosDisponiveis.slice(0, 3).map((pedido) => (
+                  <Card key={pedido.id} className="p-4 border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-semibold text-foreground">
+                          #{pedido.id.slice(0, 8)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {pedido.establishments?.nome || "Estabelecimento"}
+                        </p>
+                      </div>
+                      <Badge variant="outline">
+                        {pedido.order_items?.length || 0} itens
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <p className="text-xl font-bold text-primary">
+                        R$ {(pedido.valor_total || 0).toFixed(2)}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAceitarPedido(pedido.id)}
+                      >
+                        Aceitar
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Navigation className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Nenhum pedido disponível no momento
+                </p>
+              </div>
+            )}
+
+            {/* Entregas Recentes */}
+            {entregas.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                  Últimas Entregas
+                </h3>
+                <div className="space-y-2">
+                  {entregas.slice(0, 2).map((entrega) => (
+                    <div
+                      key={entrega.id}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <span className="text-sm text-foreground">
+                        #{entrega.order_id?.slice(0, 8)}
+                      </span>
+                      <Badge className={getStatusColor(entrega.status)} variant="secondary">
+                        {getStatusLabel(entrega.status)}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Entrega Concluída */}
+      <Dialog open={showDeliveredModal} onOpenChange={setShowDeliveredModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              Pedido Entregue!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              A entrega foi concluída com sucesso. Obrigado pelo seu trabalho!
+            </DialogDescription>
+          </DialogHeader>
+          <Button
+            onClick={() => setShowDeliveredModal(false)}
+            className="w-full mt-4"
+          >
+            Continuar
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
