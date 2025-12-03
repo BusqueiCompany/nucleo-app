@@ -31,6 +31,7 @@ import AdmDashboardPage from "./pages/adm/dashboard";
 import AdmEstabelecimentosPage from "./pages/adm/estabelecimentos";
 import AdmNotificacoesPage from "./pages/adm/notificacoes";
 import AdmRotasPrioritariasPage from "./pages/adm/rotas-prioritarias";
+import AdmMapaPage from "./pages/adm/mapa";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -273,6 +274,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <AdmRotasPrioritariasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/adm/mapa"
+        element={
+          <ProtectedRoute>
+            <AdmMapaPage />
           </ProtectedRoute>
         }
       />
